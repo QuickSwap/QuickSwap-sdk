@@ -1,8 +1,8 @@
 {
-  "name": "@uniswap/sdk",
+  "name": "quickswap-sdk",
   "license": "MIT",
   "version": "3.0.2",
-  "description": "🛠 An SDK for building applications on top of Uniswap.",
+  "description": "🛠 An SDK for building applications on top of Quickswap.",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
@@ -10,7 +10,8 @@
   ],
   "repository": "https://github.com/Uniswap/uniswap-sdk.git",
   "keywords": [
-    "uniswap",
+    "quickswap",
+    "matic",
     "ethereum"
   ],
   "module": "dist/sdk.esm.js",
