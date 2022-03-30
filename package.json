@@ -1,19 +1,14 @@
 {
-  "name": "quickswap-sdk",
+  "name": "bmflokiswap-sdk",
   "license": "MIT",
-  "version": "3.0.8",
-  "description": "🛠 An SDK for building applications on top of Quickswap.",
+  "version": "0.1.0",
+  "description": "An SDK for building applications on top of BMFlokiSwap.",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist"
   ],
-  "repository": "https://github.com/sameepsi/quickswap-sdk.git",
-  "keywords": [
-    "quickswap",
-    "matic",
-    "ethereum"
-  ],
+  "repository": "https://github.com/rebrikov-n-ogl/BMFlokiSwap-sdk",
   "module": "dist/sdk.esm.js",
   "scripts": {
     "lint": "tsdx lint src test",
