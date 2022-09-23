@@ -89,13 +89,13 @@ export interface BestTradeOptions {
  */
 function wrappedAmount(currencyAmount: CurrencyAmount, chainId: ChainId): TokenAmount {
   if (currencyAmount instanceof TokenAmount) return currencyAmount
-  if (currencyAmount.currency === ETHER) return new TokenAmount(WETH[chainId], currencyAmount.raw)
+  if (currencyAmount.currency === ETHER[chainId]) return new TokenAmount(WETH[chainId], currencyAmount.raw)
   invariant(false, 'CURRENCY')
 }
 
 function wrappedCurrency(currency: Currency, chainId: ChainId): Token {
   if (currency instanceof Token) return currency
-  if (currency === ETHER) return WETH[chainId]
+  if (currency === ETHER[chainId]) return WETH[chainId]
   invariant(false, 'CURRENCY')
 }
 
@@ -179,14 +179,14 @@ export class Trade {
     this.inputAmount =
       tradeType === TradeType.EXACT_INPUT
         ? amount
-        : route.input === ETHER
-        ? CurrencyAmount.ether(amounts[0].raw)
+        : route.input === ETHER[route.pairs[0].chainId]
+        ? CurrencyAmount.ether(amounts[0].raw, route.pairs[0].chainId)
         : amounts[0]
     this.outputAmount =
       tradeType === TradeType.EXACT_OUTPUT
         ? amount
-        : route.output === ETHER
-        ? CurrencyAmount.ether(amounts[amounts.length - 1].raw)
+        : route.output === ETHER[route.pairs[0].chainId]
+        ? CurrencyAmount.ether(amounts[amounts.length - 1].raw, route.pairs[0].chainId)
         : amounts[amounts.length - 1]
     this.executionPrice = new Price(
       this.inputAmount.currency,
@@ -213,7 +213,7 @@ export class Trade {
         .multiply(this.outputAmount.raw).quotient
       return this.outputAmount instanceof TokenAmount
         ? new TokenAmount(this.outputAmount.token, slippageAdjustedAmountOut)
-        : CurrencyAmount.ether(slippageAdjustedAmountOut)
+        : CurrencyAmount.ether(slippageAdjustedAmountOut, this.route.pairs[0].chainId)
     }
   }
 
@@ -229,7 +229,7 @@ export class Trade {
       const slippageAdjustedAmountIn = new Fraction(ONE).add(slippageTolerance).multiply(this.inputAmount.raw).quotient
       return this.inputAmount instanceof TokenAmount
         ? new TokenAmount(this.inputAmount.token, slippageAdjustedAmountIn)
-        : CurrencyAmount.ether(slippageAdjustedAmountIn)
+        : CurrencyAmount.ether(slippageAdjustedAmountIn, this.route.pairs[0].chainId)
     }
   }
 
