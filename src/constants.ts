@@ -8,7 +8,8 @@ export enum ChainId {
   MUMBAI = 80001,
   MATIC = 137,
   DOEGCHAIN_TESTNET = 568,
-  DOGECHAIN = 2000
+  DOGECHAIN = 2000,
+  ZKTESTNET = 1402,
 }
 
 export enum TradeType {
