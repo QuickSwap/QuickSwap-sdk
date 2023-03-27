@@ -62,6 +62,6 @@ export const WETH = {
   [ChainId.MATIC]: new Token(ChainId.MATIC, '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', 18, 'WMATIC', 'Wrapped Matic'),
   [ChainId.DOEGCHAIN_TESTNET]: new Token(ChainId.DOEGCHAIN_TESTNET, '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', 18, 'WDOGE', 'Wrapped Doge'),
   [ChainId.DOGECHAIN]: new Token(ChainId.DOGECHAIN, '0xB7ddC6414bf4F5515b52D8BdD69973Ae205ff101', 18, 'WDOGE', 'Wrapped Doge'),
-  [ChainId.ZKTESTNET]: new Token(ChainId.ZKTESTNET, '0xE9CC37904875B459Fa5D0FE37680d36F1ED55e38', 18, 'WETH', 'Wrapped Ether')
+  [ChainId.ZKTESTNET]: new Token(ChainId.ZKTESTNET, '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32', 18, 'WETH', 'Wrapped Ether')
   
 }

@@ -22,7 +22,7 @@ export class Currency {
     [ChainId.MATIC]: new Currency(18, 'MATIC', 'Matic'),
     [ChainId.DOEGCHAIN_TESTNET]: new Currency(18, 'WDOGE', 'Wrapped Doge'),
     [ChainId.DOGECHAIN]: new Currency(18, 'WDOGE', 'Wrapped Doge'),
-    [ChainId.ZKTESTNET]: new Currency(18, 'WETH', 'Wrapped Ether')
+    [ChainId.ZKTESTNET]: new Currency(18, 'ETH', 'Ether')
   }
 
   /**
