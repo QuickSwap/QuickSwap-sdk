@@ -10,6 +10,7 @@ export enum ChainId {
   DOEGCHAIN_TESTNET = 568,
   DOGECHAIN = 2000,
   ZKTESTNET = 1442,
+  ZKEVM = 1101,
 }
 
 export enum TradeType {
