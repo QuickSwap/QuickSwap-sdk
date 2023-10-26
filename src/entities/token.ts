@@ -64,6 +64,9 @@ export const WETH = {
   [ChainId.DOGECHAIN]: new Token(ChainId.DOGECHAIN, '0xB7ddC6414bf4F5515b52D8BdD69973Ae205ff101', 18, 'WDOGE', 'Wrapped Doge'),
   [ChainId.ZKTESTNET]: new Token(ChainId.ZKTESTNET, '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32', 18, 'WETH', 'Wrapped Ether'),
   [ChainId.ZKEVM]: new Token(ChainId.ZKEVM, '0x4F9A0e7FD2Bf6067db6994CF12E4495Df938E6e9', 18, 'WETH', 'Wrapped Ether'),
-  [ChainId.KAVA]: new Token(ChainId.KAVA, '0xc86c7C0eFbd6A49B35E8714C5f59D99De09A225b', 18, 'WKAVA', 'Wrapped Kava')
+  [ChainId.KAVA]: new Token(ChainId.KAVA, '0xc86c7C0eFbd6A49B35E8714C5f59D99De09A225b', 18, 'WKAVA', 'Wrapped Kava'),
+  [ChainId.MANTA]: new Token(ChainId.MANTA, '0x0Dc808adcE2099A9F62AA87D9670745AbA741746', 18, 'WETH', 'Wrapped Ether'),
+  [ChainId.ZKATANA]: new Token(ChainId.ZKATANA, '0xd2480162Aa7F02Ead7BF4C127465446150D58452', 18, 'WETH', 'Wrapped Ether')
+
   
 }

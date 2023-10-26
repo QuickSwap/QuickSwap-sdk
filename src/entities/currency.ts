@@ -25,6 +25,8 @@ export class Currency {
     [ChainId.ZKTESTNET]: new Currency(18, 'ETH', 'Ether'),
     [ChainId.ZKEVM]: new Currency(18, 'ETH', 'Ether'),
     [ChainId.KAVA]: new Currency(18, 'KAVA', 'KAVA'),
+    [ChainId.MANTA]: new Currency(18, 'ETH', 'Ether'),
+    [ChainId.ZKATANA]: new Currency(18, 'ETH', 'Ether'),
   }
 
   /**
