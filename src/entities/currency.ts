@@ -27,6 +27,8 @@ export class Currency {
     [ChainId.KAVA]: new Currency(18, 'KAVA', 'KAVA'),
     [ChainId.MANTA]: new Currency(18, 'ETH', 'Ether'),
     [ChainId.ZKATANA]: new Currency(18, 'ETH', 'Ether'),
+    [ChainId.BTTC]: new Currency(18, 'BTT', 'Bit Torrent'),
+    [ChainId.X1]: new Currency(18, 'OKB', 'OKB'),
   }
 
   /**
