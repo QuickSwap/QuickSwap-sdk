@@ -68,7 +68,8 @@ export const WETH = {
   [ChainId.MANTA]: new Token(ChainId.MANTA, '0x0Dc808adcE2099A9F62AA87D9670745AbA741746', 18, 'WETH', 'Wrapped Ether'),
   [ChainId.ZKATANA]: new Token(ChainId.ZKATANA, '0xd2480162Aa7F02Ead7BF4C127465446150D58452', 18, 'WETH', 'Wrapped Ether'),
   [ChainId.BTTC]: new Token(ChainId.BTTC, '0x23181f21dea5936e24163ffaba4ea3b316b57f3c', 18, 'WBTT', 'Wrapped BTT'),
-  [ChainId.X1]: new Token(ChainId.X1, '0x87A851C652E5d772ba61ec320753c6349bb3C1E3', 18, 'OKB', 'Wrapped OKB')
+  [ChainId.X1]: new Token(ChainId.X1, '0x87A851C652E5d772ba61ec320753c6349bb3C1E3', 18, 'OKB', 'Wrapped OKB'),
+  [ChainId.TIMX]: new Token(ChainId.TIMX, '0x1CcCa691501174B4A623CeDA58cC8f1a76dc3439', 18, 'WIMX', 'Wrapped IMX'),
 
   
 }
