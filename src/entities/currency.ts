@@ -30,6 +30,7 @@ export class Currency {
     [ChainId.BTTC]: new Currency(18, 'BTT', 'Bit Torrent'),
     [ChainId.X1]: new Currency(18, 'OKB', 'OKB'),
     [ChainId.TIMX]: new Currency(18, 'IMX', 'IMX'),
+    [ChainId.IMX]: new Currency(18, 'IMX', 'IMX'),
   }
 
   /**
