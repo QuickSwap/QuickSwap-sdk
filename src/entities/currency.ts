@@ -31,6 +31,7 @@ export class Currency {
     [ChainId.X1]: new Currency(18, 'OKB', 'OKB'),
     [ChainId.TIMX]: new Currency(18, 'IMX', 'IMX'),
     [ChainId.IMX]: new Currency(18, 'IMX', 'IMX'),
+    [ChainId.MIND]: new Currency(18, 'MIND', 'MIND'),
   }
 
   /**
