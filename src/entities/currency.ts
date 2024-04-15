@@ -32,6 +32,7 @@ export class Currency {
     [ChainId.TIMX]: new Currency(18, 'IMX', 'IMX'),
     [ChainId.IMX]: new Currency(18, 'IMX', 'IMX'),
     [ChainId.ASTARZKEVM]: new Currency(18, 'ETH', 'Ether'),
+    [ChainId.LAYERX]: new Currency(18, 'OKB', 'OKB'),
   }
 
   /**

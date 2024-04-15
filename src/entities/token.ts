@@ -72,6 +72,7 @@ export const WETH = {
   [ChainId.TIMX]: new Token(ChainId.TIMX, '0x1CcCa691501174B4A623CeDA58cC8f1a76dc3439', 18, 'WIMX', 'Wrapped IMX'),
   [ChainId.IMX]: new Token(ChainId.IMX, '0x3a0c2ba54d6cbd3121f01b96dfd20e99d1696c9d', 18, 'WIMX', 'Wrapped IMX'),
   [ChainId.ASTARZKEVM]: new Token(ChainId.ASTARZKEVM, '0xE9CC37904875B459Fa5D0FE37680d36F1ED55e38', 18, 'WETH', 'Wrapped Ether'),
+  [ChainId.LAYERX]: new Token(ChainId.LAYERX, '0xe538905cf8410324e03A5A23C1c177a474D59b2b', 18, 'WOKB', 'Wrapped OKB'),
 
   
 }
