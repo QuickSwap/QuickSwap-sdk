@@ -19,7 +19,7 @@ export class Currency {
 
   public static readonly ETHER = {
     [ChainId.MUMBAI]: new Currency(18, 'MATIC', 'Matic'),
-    [ChainId.MATIC]: new Currency(18, 'MATIC', 'Matic'),
+    [ChainId.MATIC]: new Currency(18, 'POL', 'Polygon Ecosystem Token'),
     [ChainId.DOEGCHAIN_TESTNET]: new Currency(18, 'WDOGE', 'Wrapped Doge'),
     [ChainId.DOGECHAIN]: new Currency(18, 'WDOGE', 'Wrapped Doge'),
     [ChainId.ZKTESTNET]: new Currency(18, 'ETH', 'Ether'),
