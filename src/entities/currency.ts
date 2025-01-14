@@ -35,6 +35,7 @@ export class Currency {
     [ChainId.LAYERX]: new Currency(18, 'OKB', 'OKB'),
     [ChainId.ETHEREUM]: new Currency(18, 'ETH', 'Ether'),
     [ChainId.MINATO]: new Currency(18, 'ETH', 'Ether'),
+    [ChainId.SONEIUM]: new Currency(18, 'ETH', 'Ether'),
   }
 
   /**
