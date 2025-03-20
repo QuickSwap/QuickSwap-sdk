@@ -76,7 +76,7 @@ export const WETH = {
   [ChainId.ETHEREUM]: new Token(ChainId.ETHEREUM, '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', 18, 'WETH', 'Wrapped Ether'),
   [ChainId.MINATO]: new Token(ChainId.MINATO, '0x4200000000000000000000000000000000000006', 18, 'WETH', 'Wrapped Ether'),
   [ChainId.SONEIUM]: new Token(ChainId.SONEIUM, '0x4200000000000000000000000000000000000006', 18, 'WETH', 'Wrapped Ether'),
-  [ChainId.SOMNIA]: new Token(ChainId.SOMNIA, '0xD82d1497e78c9Cda789E4b883e345CaCa8760d30', 18, 'WSTT', 'Wrapped Somnia Testnet Tokens'),
+  [ChainId.SOMNIA]: new Token(ChainId.SOMNIA, '0x4A3BC48C156384f9564Fd65A53a2f3D534D8f2b7', 18, 'WSTT', 'Wrapped Somnia Testnet Tokens'),
 
   
 }
