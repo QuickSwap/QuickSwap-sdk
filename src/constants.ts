@@ -24,6 +24,7 @@ export enum ChainId {
   MINATO = 1946,
   SONEIUM = 1868,
   SOMNIA = 50312,
+  BASE = 8453,
 }
 
 export enum TradeType {
