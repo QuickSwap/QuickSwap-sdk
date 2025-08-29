@@ -36,8 +36,9 @@ export class Currency {
     [ChainId.ETHEREUM]: new Currency(18, 'ETH', 'Ether'),
     [ChainId.MINATO]: new Currency(18, 'ETH', 'Ether'),
     [ChainId.SONEIUM]: new Currency(18, 'ETH', 'Ether'),
-    [ChainId.SOMNIA]: new Currency(18, 'STT', 'Somnia Testnet Tokens'),
+    [ChainId.SOMNIA_TESTNET]: new Currency(18, 'STT', 'Somnia Testnet Tokens'),
     [ChainId.BASE]: new Currency(18, 'ETH', 'Ether'),
+    [ChainId.SOMNIA]: new Currency(18, 'SOMI', 'Somnia Tokens')
   }
 
   /**

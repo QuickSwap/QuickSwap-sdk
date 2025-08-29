@@ -12,17 +12,19 @@ describe('Token', () => {
     })
 
     it('false if chain id differs', () => {
-      expect(new Token(ChainId.BASE, ADDRESS_ONE, 18).equals(new Token(ChainId.ETHEREUM, ADDRESS_ONE, 18))).toBe(
-        false
-      )
+      expect(new Token(ChainId.BASE, ADDRESS_ONE, 18).equals(new Token(ChainId.ETHEREUM, ADDRESS_ONE, 18))).toBe(false)
     })
 
     it('true if only decimals differs', () => {
-      expect(new Token(ChainId.ETHEREUM, ADDRESS_ONE, 9).equals(new Token(ChainId.ETHEREUM, ADDRESS_ONE, 18))).toBe(true)
+      expect(new Token(ChainId.ETHEREUM, ADDRESS_ONE, 9).equals(new Token(ChainId.ETHEREUM, ADDRESS_ONE, 18))).toBe(
+        true
+      )
     })
 
     it('true if address is the same', () => {
-      expect(new Token(ChainId.ETHEREUM, ADDRESS_ONE, 18).equals(new Token(ChainId.ETHEREUM, ADDRESS_ONE, 18))).toBe(true)
+      expect(new Token(ChainId.ETHEREUM, ADDRESS_ONE, 18).equals(new Token(ChainId.ETHEREUM, ADDRESS_ONE, 18))).toBe(
+        true
+      )
     })
 
     it('true on reference equality', () => {
