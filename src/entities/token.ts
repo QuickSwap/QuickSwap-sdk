@@ -149,5 +149,6 @@ export const WETH = {
     18,
     'WSOMI',
     'Wrapped Somnia Tokens'
-  )
+  ),
+  [ChainId.MANTRA]: new Token(ChainId.MANTRA, '0xE3047710EF6cB36Bcf1E58145529778eA7Cb5598', 18, 'WOM', 'Wrapped OM')
 }
