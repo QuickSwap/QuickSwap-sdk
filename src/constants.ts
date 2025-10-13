@@ -24,7 +24,8 @@ export enum ChainId {
   SONEIUM = 1868,
   SOMNIA_TESTNET = 50312,
   BASE = 8453,
-  SOMNIA = 5031
+  SOMNIA = 5031,
+  MANTRA = 5888
 }
 
 export enum TradeType {
