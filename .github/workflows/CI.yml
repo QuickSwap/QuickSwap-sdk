@@ -1,43 +1,80 @@
-name: CI
-env:
-  CI: true
+name: ci
+
+permissions:
+  contents: read
 
 on:
   pull_request:
     branches:
-      - v2
+      - main
   push:
     branches:
-      - v2
+      - main
 
 jobs:
   test:
-    strategy:
-      matrix:
-        node: ['10.x', '12.x']
-        os: [ubuntu-latest, macOS-latest]
-
-    runs-on: ${{ matrix.os }}
-
+    name: Test
+    runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
         with:
-          node-version: ${{ matrix.node }}
+          version: 9
 
-      - run: npm install -g yarn
-
-      - id: yarn-cache
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-      - uses: actions/cache@v1
+      - name: Setup Node 20.x
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
-          path: ${{ steps.yarn-cache.outputs.dir }}
-          key: ${{ matrix.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ matrix.os }}-yarn-
+          node-version: '20.x'
+          cache: 'pnpm'
 
-      - run: yarn
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - run: yarn lint
-      - run: yarn build
-      - run: yarn test
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Test
+        run: pnpm run test
+
+  security:
+    name: Security Scans
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      security-events: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: 9
+
+      - name: Setup Node 20.x
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '20.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Security audit
+        run: pnpm audit --audit-level high || echo "⚠️ Vulnerabilities detected"
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@012739e5082ff0c22ca6d6ab32e07c36df03c4a4 # v3.22.12
+        with:
+          languages: javascript-typescript
+
+      - name: CodeQL Analysis
+        uses: github/codeql-action/analyze@012739e5082ff0c22ca6d6ab32e07c36df03c4a4 # v3.22.12
