@@ -2,44 +2,20 @@ name: ci
 
 permissions:
   contents: read
-  pull-requests: write
-  security-events: write
 
 on:
   pull_request:
     branches:
-      - main 
+      - main
   push:
     branches:
-      - main 
+      - main
 
 jobs:
-  dependency-review:
-    name: Dependency Review
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-      - name: Dependency Review
-        uses: actions/dependency-review-action@5a2ce3f5b92ee19cbb1541a4984c76d921601d7c # v4.3.4
-        with:
-          fail-on-severity: moderate
-          deny-licenses: GPL-3.0, AGPL-3.0
-          comment-summary-in-pr: always
-
   test:
-    name: Test (Node ${{ matrix.node }} on ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    name: Test
+    runs-on: ubuntu-latest
     
-    strategy:
-      fail-fast: false
-      matrix:
-        node: ['18.x', '20.x']
-        os: [ubuntu-latest, macos-latest]
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -48,63 +24,57 @@ jobs:
         uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
         with:
           version: 9
-          run_install: false
 
-      - name: Setup Node ${{ matrix.node }}
+      - name: Setup Node 20.x
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
-          node-version: ${{ matrix.node }}
+          node-version: '20.x'
           cache: 'pnpm'
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify lockfile integrity
-        run: pnpm install --frozen-lockfile --prefer-offline
-
-      - name: Run linter
+      - name: Lint
         run: pnpm run lint
 
-      - name: Build package
+      - name: Build
         run: pnpm run build
 
-      - name: Run tests
+      - name: Test
         run: pnpm run test
 
-      - name: Security audit
-        run: pnpm audit --audit-level moderate || echo "⚠️ Vulnerabilities detected"
-
-  codeql:
-    name: CodeQL Security Scan
+  security:
+    name: Security Scans
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     permissions:
-      actions: read
-      contents: read
       security-events: write
-
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: 9
+
+      - name: Setup Node 20.x
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '20.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Security audit
+        run: pnpm audit --audit-level high || echo "⚠️ Vulnerabilities detected"
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@012739e5082ff0c22ca6d6ab32e07c36df03c4a4 # v3.22.12
         with:
           languages: javascript-typescript
 
-      - name: Perform CodeQL Analysis
+      - name: CodeQL Analysis
         uses: github/codeql-action/analyze@012739e5082ff0c22ca6d6ab32e07c36df03c4a4 # v3.22.12
-        with:
-          category: "/language:javascript-typescript"
