@@ -136,7 +136,7 @@ export const WETH = {
     'Wrapped Ether'
   ),
   [ChainId.SOMNIA_TESTNET]: new Token(
-    ChainId.SOMNIA,
+    ChainId.SOMNIA_TESTNET,
     '0x4A3BC48C156384f9564Fd65A53a2f3D534D8f2b7',
     18,
     'WSTT',
