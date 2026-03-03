@@ -1,14 +1,14 @@
 {
-  "name": "quickswap-sdk",
+  "name": "@quickswap-defi/sdk",
   "license": "MIT",
-  "version": "3.0.42",
+  "version": "1.0.0",
   "description": "🛠 An SDK for building applications on top of Quickswap.",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist"
   ],
-  "repository": "https://github.com/sameepsi/quickswap-sdk.git",
+  "repository": "https://github.com/QuickSwap/QuickSwap-sdk",
   "keywords": [
     "quickswap",
     "matic",
@@ -51,6 +51,10 @@
   },
   "engines": {
     "node": ">=10"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": "true"
   },
   "prettier": {
     "printWidth": 120,
