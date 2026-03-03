@@ -14,13 +14,20 @@
     "matic",
     "ethereum"
   ],
-  "module": "dist/sdk.esm.js",
+  "module": "dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "lint": "tsdx lint src test",
-    "build": "tsdx build",
-    "start": "tsdx watch",
-    "test": "tsdx test",
-    "prepublishOnly": "tsdx build"
+    "lint": "eslint src test",
+    "build": "tsup",
+    "start": "tsup --watch",
+    "test": "vitest run",
+    "prepublishOnly": "tsup"
   },
   "dependencies": {
     "@uniswap/v2-core": "^1.0.0",
@@ -45,12 +52,15 @@
     "@ethersproject/providers": "^5.0.5",
     "@ethersproject/solidity": "^5.0.2",
     "@types/big.js": "^4.0.5",
-    "@types/jest": "^24.0.25",
-    "babel-plugin-transform-jsbi-to-bigint": "^1.3.1",
-    "tsdx": "^0.12.3"
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^2.0.0"
   },
   "engines": {
-    "node": ">=10"
+    "node": ">=16"
   },
   "publishConfig": {
     "access": "public",
@@ -60,5 +70,11 @@
     "printWidth": 120,
     "semi": false,
     "singleQuote": true
+  },
+  "pnpm": {
+    "overrides": {
+      "minimatch@<3.1.4": "^3.1.4",
+      "form-data@<2.5.4": "^2.5.4"
+    }
   }
 }

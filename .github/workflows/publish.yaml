@@ -111,7 +111,7 @@ jobs:
 
       - name: Validate build output
         run: |
-          if [ ! -f "dist/index.js" ] && [ ! -f "dist/sdk.esm.js" ]; then
+          if [ ! -f "dist/index.js" ] && [ ! -f "dist/index.mjs" ]; then
             echo "❌ Build failed: dist/ not found or empty"
             exit 1
           fi
