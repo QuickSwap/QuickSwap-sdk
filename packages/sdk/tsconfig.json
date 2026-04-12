@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": ["src", "test"],
+  "compilerOptions": {
+    "target": "es2018",
+    "moduleResolution": "node",
+    "rootDir": "./",
+    "sourceMap": true,
+    "importHelpers": true,
+    "isolatedModules": false
+  }
+}

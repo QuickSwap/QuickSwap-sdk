@@ -1,80 +1,22 @@
 {
-  "name": "@quickswap-defi/sdk",
-  "license": "MIT",
-  "version": "1.0.1",
-  "description": "🛠 An SDK for building applications on top of Quickswap.",
-  "main": "dist/index.js",
-  "typings": "dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
-  "repository": "https://github.com/QuickSwap/QuickSwap-sdk",
-  "keywords": [
-    "quickswap",
-    "matic",
-    "ethereum"
-  ],
-  "module": "dist/index.mjs",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
-    }
-  },
+  "name": "quickswap-sdk-monorepo",
+  "private": true,
   "scripts": {
-    "lint": "eslint src test",
-    "build": "tsup",
-    "start": "tsup --watch",
-    "test": "vitest run",
-    "prepublishOnly": "tsup"
-  },
-  "dependencies": {
-    "@uniswap/v2-core": "^1.0.0",
-    "big.js": "^5.2.2",
-    "decimal.js-light": "^2.5.0",
-    "jsbi": "^3.1.1",
-    "tiny-invariant": "^1.1.0",
-    "tiny-warning": "^1.0.3",
-    "toformat": "^2.0.0"
-  },
-  "peerDependencies": {
-    "@ethersproject/address": "^5.0.0-beta",
-    "@ethersproject/contracts": "^5.0.0-beta",
-    "@ethersproject/networks": "^5.0.0-beta",
-    "@ethersproject/providers": "^5.0.0-beta",
-    "@ethersproject/solidity": "^5.0.0-beta"
-  },
-  "devDependencies": {
-    "@ethersproject/address": "^5.0.2",
-    "@ethersproject/contracts": "^5.0.2",
-    "@ethersproject/networks": "^5.0.2",
-    "@ethersproject/providers": "^5.0.5",
-    "@ethersproject/solidity": "^5.0.2",
-    "@types/big.js": "^4.0.5",
-    "@eslint/js": "^9.0.0",
-    "eslint": "^9.0.0",
-    "tsup": "^8.0.0",
-    "typescript": "^5.5.0",
-    "typescript-eslint": "^8.0.0",
-    "vitest": "^2.0.0"
-  },
-  "engines": {
-    "node": ">=16"
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": "true"
-  },
-  "prettier": {
-    "printWidth": 120,
-    "semi": false,
-    "singleQuote": true
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "build:protocol-core": "pnpm --filter @quickswap-defi/protocol-core build",
+    "build:sdk": "pnpm --filter @quickswap-defi/sdk build",
+    "test:protocol-core": "pnpm --filter @quickswap-defi/protocol-core test",
+    "test:sdk": "pnpm --filter @quickswap-defi/sdk test"
   },
   "pnpm": {
     "overrides": {
       "minimatch@<3.1.4": "^3.1.4",
       "form-data@<2.5.4": "^2.5.4"
     }
+  },
+  "engines": {
+    "node": ">=16"
   }
 }

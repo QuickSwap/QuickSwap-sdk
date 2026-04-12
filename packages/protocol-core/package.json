@@ -1,0 +1,41 @@
+{
+  "name": "@quickswap-defi/protocol-core",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Pure protocol knowledge for QuickSwap DEX — chains, stablecoins, fees, schema detection",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src/",
+    "validate:addresses": "tsx scripts/validate-addresses.ts",
+    "prepublishOnly": "pnpm test && pnpm build && pnpm validate:addresses"
+  },
+  "devDependencies": {
+    "@noble/hashes": "^1.7.0",
+    "@vitest/coverage-v8": "^2.0.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
