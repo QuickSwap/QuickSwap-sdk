@@ -128,16 +128,16 @@ describe('chain data integrity', () => {
       expect(ZKEVM.protocols[1].version).toBe('univ3')
     })
 
-    it('MANTRA has v4 with dynamic fee', () => {
+    it('MANTRA has v4 with exposeDynamicFee', () => {
       expect(MANTRA.protocols).toHaveLength(1)
       expect(MANTRA.protocols[0].version).toBe('v4')
-      expect(MANTRA.protocols[0].hasDynamicFee).toBe(true)
+      expect(MANTRA.protocols[0].exposeDynamicFee).toBe(true)
     })
 
-    it('Manta has univ3 without dynamic fee', () => {
+    it('Manta has univ3 without exposeDynamicFee', () => {
       expect(MANTA.protocols).toHaveLength(1)
       expect(MANTA.protocols[0].version).toBe('univ3')
-      expect(MANTA.protocols[0].hasDynamicFee).toBe(false)
+      expect(MANTA.protocols[0].exposeDynamicFee).toBe(false)
     })
   })
 

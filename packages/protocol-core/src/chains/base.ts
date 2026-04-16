@@ -10,8 +10,8 @@ export const BASE: ChainConfig = {
     decimals: 18,
   },
   protocols: [
-    { version: 'v4', hasDynamicFee: true },
-    { version: 'v2', hasDynamicFee: false },
+    { version: 'v4', exposeDynamicFee: true },
+    { version: 'v2', exposeDynamicFee: false },
   ],
   stablecoins: [
     { address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', symbol: 'USDC', decimals: 6 },

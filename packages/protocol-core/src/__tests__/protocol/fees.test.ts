@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { V2_FEE_BPS, V2_FEE_RATE, computeV2Fees } from '../../protocol/fees'
+import { V2_FEE_BPS, V2_FEE_RATE, computeV2Fee } from '../../protocol/fees'
 
 describe('protocol/fees', () => {
   it('V2_FEE_BPS is 30', () => {
@@ -10,13 +10,13 @@ describe('protocol/fees', () => {
     expect(V2_FEE_RATE).toBe(0.003)
   })
 
-  describe('computeV2Fees', () => {
+  describe('computeV2Fee', () => {
     it('calculates correct fee', () => {
-      expect(computeV2Fees(1000)).toBeCloseTo(3, 10)
+      expect(computeV2Fee(1000)).toBeCloseTo(3, 10)
     })
 
     it('returns 0 for 0 input', () => {
-      expect(computeV2Fees(0)).toBe(0)
+      expect(computeV2Fee(0)).toBe(0)
     })
   })
 })

@@ -28,10 +28,10 @@ describe('tokens/native', () => {
   })
 
   describe('getWrappedNative', () => {
-    it('returns WMATIC for Polygon', () => {
+    it('returns WPOL for Polygon', () => {
       const result = getWrappedNative(137)
       expect(result).toBeDefined()
-      expect(result!.symbol).toBe('WMATIC')
+      expect(result!.symbol).toBe('WPOL')
       expect(result!.decimals).toBe(18)
     })
 

@@ -9,12 +9,12 @@ export const DOGECHAIN: ChainConfig = {
   nativeSymbol: 'DOGE',
   wrappedNative: {
     address: '0xB7ddC6414bf4F5515b52D8BdD69973Ae205ff101',
-    symbol: 'WWDOGE',
+    symbol: 'WDOGE',
     decimals: 18,
   },
   protocols: [
-    { version: 'v3', hasDynamicFee: false },
-    { version: 'v2', hasDynamicFee: false },
+    { version: 'v3', exposeDynamicFee: false },
+    { version: 'v2', exposeDynamicFee: false },
   ],
   stablecoins: [
     { address: '0x765277EebeCA2e31912C9946eAe1021199B39C61', symbol: 'USDC', decimals: 6 },

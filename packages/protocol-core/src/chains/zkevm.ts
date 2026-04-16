@@ -10,8 +10,8 @@ export const ZKEVM: ChainConfig = {
     decimals: 18,
   },
   protocols: [
-    { version: 'v3', hasDynamicFee: false },
-    { version: 'univ3', hasDynamicFee: false },
+    { version: 'v3', exposeDynamicFee: false },
+    { version: 'univ3', exposeDynamicFee: false },
   ],
   stablecoins: [
     { address: '0xA8CE8aee21bC2A48a5EF670afCc9274C7bbbC035', symbol: 'USDC', decimals: 6 },

@@ -6,12 +6,12 @@ export const POLYGON: ChainConfig = {
   nativeSymbol: 'POL',
   wrappedNative: {
     address: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
-    symbol: 'WMATIC',
+    symbol: 'WPOL',
     decimals: 18,
   },
   protocols: [
-    { version: 'v3', hasDynamicFee: false },
-    { version: 'v2', hasDynamicFee: false },
+    { version: 'v3', exposeDynamicFee: false },
+    { version: 'v2', exposeDynamicFee: false },
   ],
   stablecoins: [
     { address: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', symbol: 'USDC.e', decimals: 6 },

@@ -44,3 +44,25 @@ export function getChain(chainId: number): ChainConfig | undefined {
 export function getSupportedChainIds(): number[] {
   return Object.keys(CHAIN_REGISTRY).map(Number)
 }
+
+export function getChainOrThrow(chainId: number): ChainConfig {
+  const chain = CHAIN_REGISTRY[chainId]
+  if (!chain) {
+    throw new Error(`Unsupported chain: ${chainId}`)
+  }
+  return chain
+}
+
+export const CHAIN_ID = {
+  POLYGON: POLYGON.chainId,
+  BASE: BASE.chainId,
+  MANTRA: MANTRA.chainId,
+  MANTA: MANTA.chainId,
+  SONEIUM: SONEIUM.chainId,
+  SOMNIA: SOMNIA.chainId,
+  IMX: IMX.chainId,
+  XLAYER: XLAYER.chainId,
+  ZKEVM: ZKEVM.chainId,
+  DOGECHAIN: DOGECHAIN.chainId,
+  ETHEREUM: ETHEREUM.chainId,
+} as const

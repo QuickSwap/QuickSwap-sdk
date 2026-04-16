@@ -10,7 +10,7 @@ export const IMX: ChainConfig = {
     decimals: 18,
   },
   protocols: [
-    { version: 'univ3', hasDynamicFee: false },
+    { version: 'univ3', exposeDynamicFee: false },
   ],
   stablecoins: [
     { address: '0x6de8aCC0D406837030CE4dd28e7c08C5a96a30d2', symbol: 'USDC', decimals: 6 },

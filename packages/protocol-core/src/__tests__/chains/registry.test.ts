@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { CHAIN_REGISTRY, getChain, getSupportedChainIds } from '../../chains/registry'
+import { CHAIN_REGISTRY, CHAIN_ID, getChain, getChainOrThrow, getSupportedChainIds } from '../../chains/registry'
+import type { TokenInfo } from '../../chains/types'
 
 const EXPECTED_CHAIN_IDS = [137, 8453, 5888, 169, 1868, 5031, 13371, 196, 1101, 2000, 1]
 
@@ -39,6 +40,43 @@ describe('chain registry', () => {
     })
   })
 
+  describe('getChainOrThrow', () => {
+    it('returns config for known chain', () => {
+      const chain = getChainOrThrow(137)
+      expect(chain.name).toBe('Polygon PoS')
+    })
+
+    it('throws for unknown chain', () => {
+      expect(() => getChainOrThrow(99999)).toThrow('Unsupported chain: 99999')
+    })
+  })
+
+  describe('CHAIN_ID', () => {
+    it('maps names to correct chain IDs', () => {
+      expect(CHAIN_ID.POLYGON).toBe(137)
+      expect(CHAIN_ID.BASE).toBe(8453)
+      expect(CHAIN_ID.MANTRA).toBe(5888)
+      expect(CHAIN_ID.MANTA).toBe(169)
+      expect(CHAIN_ID.SONEIUM).toBe(1868)
+      expect(CHAIN_ID.SOMNIA).toBe(5031)
+      expect(CHAIN_ID.IMX).toBe(13371)
+      expect(CHAIN_ID.XLAYER).toBe(196)
+      expect(CHAIN_ID.ZKEVM).toBe(1101)
+      expect(CHAIN_ID.DOGECHAIN).toBe(2000)
+      expect(CHAIN_ID.ETHEREUM).toBe(1)
+    })
+
+    it('has same keys as registry', () => {
+      expect(Object.keys(CHAIN_ID)).toHaveLength(getSupportedChainIds().length)
+    })
+
+    it('every CHAIN_ID value exists in registry', () => {
+      for (const id of Object.values(CHAIN_ID)) {
+        expect(getChain(id)).toBeDefined()
+      }
+    })
+  })
+
   describe('immutability', () => {
     it('CHAIN_REGISTRY is frozen', () => {
       expect(Object.isFrozen(CHAIN_REGISTRY)).toBe(true)
@@ -64,7 +102,6 @@ describe('chain registry', () => {
       const polygon = getChain(137)!
       const lengthBefore = polygon.stablecoins.length
       try {
-        // @ts-expect-error intentional mutation attempt on readonly
         ;(polygon.stablecoins as TokenInfo[]).push({ address: '0x0', symbol: 'FAKE', decimals: 6 })
       } catch {
         // strict mode throws — acceptable

@@ -10,7 +10,7 @@ export const MANTA: ChainConfig = {
     decimals: 18,
   },
   protocols: [
-    { version: 'univ3', hasDynamicFee: false },
+    { version: 'univ3', exposeDynamicFee: false },
   ],
   stablecoins: [
     { address: '0xb73603C5d87fA094B7314C74ACE2e64D165016fb', symbol: 'USDC', decimals: 6 },

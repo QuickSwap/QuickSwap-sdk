@@ -12,14 +12,15 @@ export function getStablecoinAddresses(chainId: number): string[] {
 /** Lazy cache: chainId → Set of lowercase stablecoin addresses */
 const _stablecoinSetCache = new Map<number, Set<string>>()
 
-function getStablecoinSet(chainId: number): Set<string> {
+function getStablecoinSet(chainId: number): Set<string> | undefined {
   const cached = _stablecoinSetCache.get(chainId)
   if (cached !== undefined) return cached
+  if (getChain(chainId) === undefined) return undefined
   const set = new Set(getStablecoinAddresses(chainId))
   _stablecoinSetCache.set(chainId, set)
   return set
 }
 
 export function isStablecoin(chainId: number, address: string): boolean {
-  return getStablecoinSet(chainId).has(address.toLowerCase())
+  return getStablecoinSet(chainId)?.has(address.toLowerCase()) ?? false
 }

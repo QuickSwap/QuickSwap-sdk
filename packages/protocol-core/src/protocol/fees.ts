@@ -16,6 +16,6 @@ export const V2_FEE_RATE = 0.003
  * integer/BigInt arithmetic with the raw token amounts and apply the 0.30% fee
  * in full-precision basis-point math (amountIn * 30 / 10_000).
  */
-export function computeV2Fees(amountIn: number): number {
+export function computeV2Fee(amountIn: number): number {
   return amountIn * V2_FEE_RATE
 }

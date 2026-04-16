@@ -49,8 +49,8 @@ describe('protocol/versions', () => {
       expect(getProtocolVersionLabel(99999, true)).toBe('v3')
     })
 
-    it('returns v2 for Ethereum (no protocols)', () => {
-      expect(getProtocolVersionLabel(1, true)).toBe('v3') // fallback — Ethereum has no CL protocol
+    it('returns v3 fallback for Ethereum CL (no protocols)', () => {
+      expect(getProtocolVersionLabel(1, true)).toBe('v3')
     })
   })
 })

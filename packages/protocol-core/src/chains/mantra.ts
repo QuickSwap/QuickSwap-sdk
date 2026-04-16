@@ -3,14 +3,14 @@ import type { ChainConfig } from './types'
 export const MANTRA: ChainConfig = {
   chainId: 5888,
   name: 'MANTRA',
-  nativeSymbol: 'OM',
+  nativeSymbol: 'MANTRA',
   wrappedNative: {
     address: '0xE3047710EF6cB36Bcf1E58145529778eA7Cb5598',
     symbol: 'WMANTRA',
     decimals: 18,
   },
   protocols: [
-    { version: 'v4', hasDynamicFee: true },
+    { version: 'v4', exposeDynamicFee: true },
   ],
   stablecoins: [
     { address: '0xd2b95283011E47257917770D28Bb3EE44c849f6F', symbol: 'mantraUSD', decimals: 18 },

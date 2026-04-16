@@ -9,6 +9,7 @@ export const ETHEREUM: ChainConfig = {
     symbol: 'WETH',
     decimals: 18,
   },
+  // No QuickSwap deployment — reference chain for cross-chain price feeds and stablecoin addresses
   protocols: [],
   stablecoins: [
     { address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', symbol: 'USDC', decimals: 6 },

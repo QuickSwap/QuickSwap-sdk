@@ -10,7 +10,7 @@ export const SOMNIA: ChainConfig = {
     decimals: 18,
   },
   protocols: [
-    { version: 'v4', hasDynamicFee: true },
+    { version: 'v4', exposeDynamicFee: true },
   ],
   stablecoins: [
     { address: '0x28BEc7E30E6faee657a03e19Bf1128AaD7632A00', symbol: 'USDC', decimals: 6 },

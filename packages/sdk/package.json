@@ -64,7 +64,7 @@
   },
   "publishConfig": {
     "access": "public",
-    "provenance": "true"
+    "provenance": true
   },
   "prettier": {
     "printWidth": 120,

@@ -10,7 +10,7 @@ export const SONEIUM: ChainConfig = {
     decimals: 18,
   },
   protocols: [
-    { version: 'v4', hasDynamicFee: true },
+    { version: 'v4', exposeDynamicFee: true },
   ],
   stablecoins: [
     { address: '0xbA9986D2381edf1DA03B0B9c1f8b00dc4AacC369', symbol: 'USDC', decimals: 6 },

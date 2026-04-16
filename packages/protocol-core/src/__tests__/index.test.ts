@@ -3,27 +3,32 @@ import {
   PROTOCOL_VERSIONS,
   SCHEMA_VARIANTS,
   CHAIN_REGISTRY,
+  CHAIN_ID,
   getChain,
+  getChainOrThrow,
   getSupportedChainIds,
+  POLYGON,
+  BASE,
+  MANTRA,
+  MANTA,
+  SONEIUM,
+  SOMNIA,
+  IMX,
+  XLAYER,
+  ZKEVM,
+  DOGECHAIN,
+  ETHEREUM,
   getSchemaVariant,
   getSupportedVersions,
   getProtocolVersionLabel,
   V2_FEE_BPS,
   V2_FEE_RATE,
-  computeV2Fees,
+  computeV2Fee,
   getStablecoins,
   getStablecoinAddresses,
   isStablecoin,
   getNativeToken,
   getWrappedNative,
-  percentChange,
-  getDayTimestamps,
-  getDayIds,
-  getLast7DayTimestamps,
-  ONE_DAY,
-  SUBGRAPH_PAGE_SIZE,
-  MIN_PRICE_USD,
-  MIN_VOLUME_USD,
 } from '../index'
 
 describe('barrel export (index.ts)', () => {
@@ -34,8 +39,24 @@ describe('barrel export (index.ts)', () => {
 
   it('exports chain registry functions', () => {
     expect(typeof getChain).toBe('function')
+    expect(typeof getChainOrThrow).toBe('function')
     expect(typeof getSupportedChainIds).toBe('function')
     expect(CHAIN_REGISTRY).toBeDefined()
+    expect(CHAIN_ID).toBeDefined()
+  })
+
+  it('exports individual chain configs', () => {
+    expect(POLYGON.chainId).toBe(137)
+    expect(BASE.chainId).toBe(8453)
+    expect(MANTRA.chainId).toBe(5888)
+    expect(MANTA.chainId).toBe(169)
+    expect(SONEIUM.chainId).toBe(1868)
+    expect(SOMNIA.chainId).toBe(5031)
+    expect(IMX.chainId).toBe(13371)
+    expect(XLAYER.chainId).toBe(196)
+    expect(ZKEVM.chainId).toBe(1101)
+    expect(DOGECHAIN.chainId).toBe(2000)
+    expect(ETHEREUM.chainId).toBe(1)
   })
 
   it('exports protocol functions', () => {
@@ -47,7 +68,7 @@ describe('barrel export (index.ts)', () => {
   it('exports fee constants', () => {
     expect(V2_FEE_BPS).toBe(30)
     expect(V2_FEE_RATE).toBe(0.003)
-    expect(typeof computeV2Fees).toBe('function')
+    expect(typeof computeV2Fee).toBe('function')
   })
 
   it('exports token functions', () => {
@@ -58,28 +79,16 @@ describe('barrel export (index.ts)', () => {
     expect(typeof getWrappedNative).toBe('function')
   })
 
-  it('exports utility functions and constants', () => {
-    expect(typeof percentChange).toBe('function')
-    expect(typeof getDayTimestamps).toBe('function')
-    expect(typeof getDayIds).toBe('function')
-    expect(typeof getLast7DayTimestamps).toBe('function')
-    expect(ONE_DAY).toBe(86400)
-    expect(SUBGRAPH_PAGE_SIZE).toBe(1000)
-    expect(MIN_PRICE_USD).toBe(0.000001)
-    expect(MIN_VOLUME_USD).toBe(0.0001)
-  })
-
-  it('has exactly 24 runtime exports (types excluded)', () => {
-    // 2 const objects + 3 registry + 3 protocol + 3 fee + 5 token + 8 util = 24
+  it('has exactly 29 runtime exports (types excluded)', () => {
+    // 2 const objects + 5 registry + 11 chain configs + 3 protocol + 3 fee + 5 token = 29
     const allExports = {
       PROTOCOL_VERSIONS, SCHEMA_VARIANTS,
-      CHAIN_REGISTRY, getChain, getSupportedChainIds,
+      CHAIN_REGISTRY, CHAIN_ID, getChain, getChainOrThrow, getSupportedChainIds,
+      POLYGON, BASE, MANTRA, MANTA, SONEIUM, SOMNIA, IMX, XLAYER, ZKEVM, DOGECHAIN, ETHEREUM,
       getSchemaVariant, getSupportedVersions, getProtocolVersionLabel,
-      V2_FEE_BPS, V2_FEE_RATE, computeV2Fees,
+      V2_FEE_BPS, V2_FEE_RATE, computeV2Fee,
       getStablecoins, getStablecoinAddresses, isStablecoin, getNativeToken, getWrappedNative,
-      percentChange, getDayTimestamps, getDayIds, getLast7DayTimestamps, ONE_DAY,
-      SUBGRAPH_PAGE_SIZE, MIN_PRICE_USD, MIN_VOLUME_USD,
     }
-    expect(Object.keys(allExports)).toHaveLength(24)
+    expect(Object.keys(allExports)).toHaveLength(29)
   })
 })
