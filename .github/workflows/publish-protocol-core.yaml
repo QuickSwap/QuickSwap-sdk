@@ -1,0 +1,327 @@
+name: Publish Protocol Core
+
+# SECURITY: Uses Trusted Publishers (OIDC) — no long-lived tokens
+# Requires NPM trusted publisher config: https://docs.npmjs.com/trusted-publishers
+# Package: @quickswap-defi/protocol-core
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+        default: 'patch'
+      dry_run:
+        description: 'Dry run (test without publishing)'
+        required: false
+        type: boolean
+        default: false
+
+  push:
+    tags:
+      - 'protocol-core/v*.*.*'
+
+permissions:
+  contents: read
+
+jobs:
+  # ============================================
+  # JOB 1: Security Audit & Validation
+  # ============================================
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: 9
+
+      - name: Setup Node.js 20 LTS
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Verify package integrity
+        run: |
+          echo "Verifying packages/protocol-core/package.json integrity..."
+          node -e "JSON.parse(require('fs').readFileSync('packages/protocol-core/package.json'))"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run security audit
+        run: pnpm audit --audit-level=high
+
+      - name: Run linter
+        run: pnpm --filter @quickswap-defi/protocol-core lint
+
+  # ============================================
+  # JOB 2: Build & Test
+  # ============================================
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    needs: security-audit
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: 9
+
+      - name: Setup Node.js 20 LTS
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm --filter @quickswap-defi/protocol-core test
+
+      - name: Validate addresses
+        run: pnpm --filter @quickswap-defi/protocol-core validate:addresses
+
+      - name: Build package
+        run: pnpm --filter @quickswap-defi/protocol-core build
+
+      - name: Validate build output
+        run: |
+          if [ ! -f "packages/protocol-core/dist/index.js" ] && [ ! -f "packages/protocol-core/dist/index.mjs" ]; then
+            echo "Build failed: packages/protocol-core/dist/ not found or empty"
+            exit 1
+          fi
+          echo "Build validation passed"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: protocol-core-build
+          path: packages/protocol-core/dist/
+          retention-days: 7
+
+  # ============================================
+  # JOB 3: Version Bump (if manual trigger)
+  # ============================================
+  version-bump:
+    name: Version Bump
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'workflow_dispatch' && !inputs.dry_run
+    timeout-minutes: 5
+    permissions:
+      contents: write
+
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+
+    steps:
+      - name: Verify branch is main
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "Error: Can only publish from main branch"
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Configure Git
+        run: |
+          git config user.name "quickswap-bot"
+          git config user.email "bot@quickswap.exchange"
+
+      - name: Bump version
+        id: bump
+        run: |
+          cd packages/protocol-core
+          echo "Current version: $(node -p "require('./package.json').version")"
+          pnpm version ${{ inputs.bump }} --no-git-tag-version --no-commit-hooks
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Version bumped to: $NEW_VERSION"
+
+      - name: Commit and push version
+        run: |
+          git add packages/protocol-core/package.json
+          git diff --staged --quiet || git commit -m "chore(release): protocol-core v$(cd packages/protocol-core && node -p "require('./package.json').version") [skip ci]"
+          git tag "protocol-core/v$(cd packages/protocol-core && node -p "require('./package.json').version")"
+          git push origin HEAD --follow-tags
+
+  # ============================================
+  # JOB 4: Publish to NPM (Secure OIDC)
+  # ============================================
+  publish-npm:
+    name: Publish to NPM
+    runs-on: ubuntu-latest
+    needs: [build-and-test, version-bump]
+    if: |
+      always() &&
+      needs.build-and-test.result == 'success' &&
+      (
+        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/protocol-core/v')) ||
+        (github.event_name == 'workflow_dispatch' && !inputs.dry_run && needs.version-bump.result == 'success')
+      )
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+
+    environment:
+      name: npm-protocol-core
+      url: https://www.npmjs.com/package/@quickswap-defi/protocol-core
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Fetch version bump
+        if: github.event_name == 'workflow_dispatch'
+        run: git fetch origin --tags
+
+      - name: Verify tag is on main branch
+        if: github.event_name == 'push'
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor $GITHUB_SHA origin/main; then
+            echo "Error: Tag does not point to a commit on main branch"
+            exit 1
+          fi
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: 9
+
+      - name: Setup Node.js with NPM registry
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Update npm (required for OIDC)
+        run: |
+          npm install -g npm@11.5.1
+          npm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build package
+        run: pnpm --filter @quickswap-defi/protocol-core build
+
+      - name: Pre-publish verification
+        run: |
+          cd packages/protocol-core
+          echo "Package details:"
+          npm pack --dry-run
+          echo ""
+          npm publish --dry-run
+
+      - name: Check if version already exists
+        id: check_version
+        run: |
+          cd packages/protocol-core
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          echo "Checking if version $PACKAGE_VERSION already exists..."
+          if npm view "@quickswap-defi/protocol-core@$PACKAGE_VERSION" version > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish to NPM
+        if: steps.check_version.outputs.exists == 'false'
+        run: cd packages/protocol-core && npm publish --access public --provenance
+
+      - name: Skip publish (version exists)
+        if: steps.check_version.outputs.exists == 'true'
+        run: |
+          echo "Skipping: version ${{ steps.check_version.outputs.version }} already exists"
+
+      - name: Get published version
+        id: version
+        run: |
+          VERSION=$(cd packages/protocol-core && node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "protocol-core/v${{ steps.version.outputs.version }}" \
+            --title "@quickswap-defi/protocol-core v${{ steps.version.outputs.version }}" \
+            --notes "## NPM Package Published
+          **Package:** \`@quickswap-defi/protocol-core@${{ steps.version.outputs.version }}\`
+          **NPM:** https://www.npmjs.com/package/@quickswap-defi/protocol-core
+          ### Installation
+          \`\`\`bash
+          npm install @quickswap-defi/protocol-core@${{ steps.version.outputs.version }}
+          \`\`\`" \
+            --generate-notes \
+            ${{ contains(steps.version.outputs.version, '-') && '--prerelease' || '' }}
+
+  # ============================================
+  # JOB 5: Post-Publish Verification
+  # ============================================
+  verify-publish:
+    name: Verify Publication
+    runs-on: ubuntu-latest
+    needs: publish-npm
+    if: needs.publish-npm.result == 'success'
+    timeout-minutes: 5
+
+    steps:
+      - name: Wait for NPM propagation
+        run: sleep 30
+
+      - name: Verify package
+        run: |
+          npm view @quickswap-defi/protocol-core version
+          npm view @quickswap-defi/protocol-core --json | jq '.provenance'
+
+      - name: Test installation
+        run: |
+          mkdir -p /tmp/test-install && cd /tmp/test-install
+          npm init -y
+          npm install @quickswap-defi/protocol-core --ignore-scripts
+          echo "Package installation successful"

@@ -1,11 +1,10 @@
-name: Secure NPM Publish
+name: Publish SDK
 
-# ⚠️ SECURITY: This workflow uses Trusted Publishers (OIDC)
-# No long-lived tokens needed - authentication via GitHub identity
-# Requires NPM organization setup: https://docs.npmjs.com/trusted-publishers
+# SECURITY: Uses Trusted Publishers (OIDC) — no long-lived tokens
+# Requires NPM trusted publisher config: https://docs.npmjs.com/trusted-publishers
+# Package: @quickswap-defi/sdk
 
 on:
-  # Manual trigger with version bump options
   workflow_dispatch:
     inputs:
       bump:
@@ -24,77 +23,73 @@ on:
         type: boolean
         default: false
 
-  # Automatic publish on release tags
   push:
     tags:
-      - 'v*.*.*'
+      - 'sdk/v*.*.*'
 
 permissions:
-  contents: write
-  id-token: write
-  pull-requests: read
+  contents: read
 
 jobs:
   # ============================================
   # JOB 1: Security Audit & Validation
   # ============================================
   security-audit:
-    name: 🔒 Security Audit
+    name: Security Audit
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
         with:
           version: 9
 
       - name: Setup Node.js 20 LTS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
           node-version: '20'
           cache: 'pnpm'
 
       - name: Verify package integrity
         run: |
-          echo "📦 Verifying package.json integrity..."
-          node -e "JSON.parse(require('fs').readFileSync('package.json'))"
+          echo "Verifying packages/sdk/package.json integrity..."
+          node -e "JSON.parse(require('fs').readFileSync('packages/sdk/package.json'))"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Run security audit
-        run: pnpm audit --audit-level=moderate
-        continue-on-error: true
+        run: pnpm audit --audit-level=high
 
       - name: Run linter
-        run: pnpm run lint
+        run: pnpm --filter @quickswap-defi/sdk lint
 
   # ============================================
   # JOB 2: Build & Test
   # ============================================
   build-and-test:
-    name: 🏗️ Build & Test
+    name: Build & Test
     runs-on: ubuntu-latest
     needs: security-audit
     timeout-minutes: 10
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
         with:
           version: 9
 
       - name: Setup Node.js 20 LTS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -103,54 +98,62 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run tests
-        run: pnpm run test
-        continue-on-error: true
+        run: pnpm --filter @quickswap-defi/sdk test
 
       - name: Build package
-        run: pnpm run build
+        run: pnpm --filter @quickswap-defi/sdk build
 
       - name: Validate build output
         run: |
-          if [ ! -f "dist/index.js" ] && [ ! -f "dist/index.mjs" ]; then
-            echo "❌ Build failed: dist/ not found or empty"
+          if [ ! -f "packages/sdk/dist/index.js" ] && [ ! -f "packages/sdk/dist/index.mjs" ]; then
+            echo "Build failed: packages/sdk/dist/ not found or empty"
             exit 1
           fi
-          echo "✅ Build validation passed"
+          echo "Build validation passed"
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: sdk-build
-          path: dist/
+          path: packages/sdk/dist/
           retention-days: 7
 
   # ============================================
   # JOB 3: Version Bump (if manual trigger)
   # ============================================
   version-bump:
-    name: 📝 Version Bump
+    name: Version Bump
     runs-on: ubuntu-latest
     needs: build-and-test
     if: github.event_name == 'workflow_dispatch' && !inputs.dry_run
     timeout-minutes: 5
+    permissions:
+      contents: write
 
     outputs:
       new_version: ${{ steps.bump.outputs.new_version }}
 
     steps:
+      - name: Verify branch is main
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "Error: Can only publish from main branch"
+            exit 1
+          fi
+
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
         with:
           version: 9
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -163,83 +166,88 @@ jobs:
       - name: Bump version
         id: bump
         run: |
+          cd packages/sdk
           echo "Current version: $(node -p "require('./package.json').version")"
           pnpm version ${{ inputs.bump }} --no-git-tag-version --no-commit-hooks
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "✅ Version bumped to: $NEW_VERSION"
+          echo "Version bumped to: $NEW_VERSION"
 
       - name: Commit and push version
         run: |
-          git add package.json pnpm-lock.yaml 2>/dev/null || true
-          git add package.json
-          git diff --staged --quiet || git commit -m "chore(release): v$(node -p "require('./package.json').version") [skip ci]"
-          git tag "v$(node -p "require('./package.json').version")"
+          git add packages/sdk/package.json
+          git diff --staged --quiet || git commit -m "chore(release): sdk v$(cd packages/sdk && node -p "require('./package.json').version") [skip ci]"
+          git tag "sdk/v$(cd packages/sdk && node -p "require('./package.json').version")"
           git push origin HEAD --follow-tags
 
   # ============================================
   # JOB 4: Publish to NPM (Secure OIDC)
   # ============================================
   publish-npm:
-    name: 🚀 Publish to NPM
+    name: Publish to NPM
     runs-on: ubuntu-latest
     needs: [build-and-test, version-bump]
     if: |
       always() &&
       needs.build-and-test.result == 'success' &&
       (
-        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk/v')) ||
         (github.event_name == 'workflow_dispatch' && !inputs.dry_run && needs.version-bump.result == 'success')
       )
     timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
 
     environment:
-      name: npm-production
+      name: npm-sdk
       url: https://www.npmjs.com/package/@quickswap-defi/sdk
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
-      - name: Fetch latest (after version bump)
+      - name: Fetch version bump
         if: github.event_name == 'workflow_dispatch'
+        run: git fetch origin --tags
+
+      - name: Verify tag is on main branch
+        if: github.event_name == 'push'
         run: |
-          git fetch origin --tags --force
-          git reset --hard origin/${{ github.ref_name }}
+          git fetch origin main
+          if ! git merge-base --is-ancestor $GITHUB_SHA origin/main; then
+            echo "Error: Tag does not point to a commit on main branch"
+            exit 1
+          fi
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: 9
 
       - name: Setup Node.js with NPM registry
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org/'
 
       - name: Update npm (required for OIDC)
         run: |
-          npm install -g npm@latest
+          npm install -g npm@11.5.1
           npm --version
-
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: sdk-build
-          path: dist/
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Rebuild (ensure consistency)
-        run: pnpm run build
+      - name: Build package
+        run: pnpm --filter @quickswap-defi/sdk build
 
       - name: Pre-publish verification
         run: |
-          echo "📋 Package details:"
+          cd packages/sdk
+          echo "Package details:"
           npm pack --dry-run
           echo ""
           npm publish --dry-run
@@ -247,6 +255,7 @@ jobs:
       - name: Check if version already exists
         id: check_version
         run: |
+          cd packages/sdk
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
           echo "Checking if version $PACKAGE_VERSION already exists..."
           if npm view "@quickswap-defi/sdk@$PACKAGE_VERSION" version > /dev/null 2>&1; then
@@ -259,41 +268,40 @@ jobs:
 
       - name: Publish to NPM
         if: steps.check_version.outputs.exists == 'false'
-        run: npm publish --access public --provenance
+        run: cd packages/sdk && npm publish --access public --provenance
 
       - name: Skip publish (version exists)
         if: steps.check_version.outputs.exists == 'true'
         run: |
-          echo "⏭️ Skipping: version ${{ steps.check_version.outputs.version }} already exists"
+          echo "Skipping: version ${{ steps.check_version.outputs.version }} already exists"
 
       - name: Get published version
         id: version
         run: |
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION=$(cd packages/sdk && node -p "require('./package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: v${{ steps.version.outputs.version }}
-          body: |
-            ## 📦 NPM Package Published
-            **Package:** `@quickswap-defi/sdk@${{ steps.version.outputs.version }}`
-            **NPM:** https://www.npmjs.com/package/@quickswap-defi/sdk
-            ### Installation
-            ```bash
-            npm install @quickswap-defi/sdk@${{ steps.version.outputs.version }}
-            ```
-          draft: false
-          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
-          generate_release_notes: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "sdk/v${{ steps.version.outputs.version }}" \
+            --title "@quickswap-defi/sdk v${{ steps.version.outputs.version }}" \
+            --notes "## NPM Package Published
+          **Package:** \`@quickswap-defi/sdk@${{ steps.version.outputs.version }}\`
+          **NPM:** https://www.npmjs.com/package/@quickswap-defi/sdk
+          ### Installation
+          \`\`\`bash
+          npm install @quickswap-defi/sdk@${{ steps.version.outputs.version }}
+          \`\`\`" \
+            --generate-notes \
+            ${{ contains(steps.version.outputs.version, '-') && '--prerelease' || '' }}
 
   # ============================================
   # JOB 5: Post-Publish Verification
   # ============================================
   verify-publish:
-    name: ✅ Verify Publication
+    name: Verify Publication
     runs-on: ubuntu-latest
     needs: publish-npm
     if: needs.publish-npm.result == 'success'
@@ -313,4 +321,4 @@ jobs:
           mkdir -p /tmp/test-install && cd /tmp/test-install
           npm init -y
           npm install @quickswap-defi/sdk --ignore-scripts
-          echo "✅ Package installation successful"
+          echo "Package installation successful"
