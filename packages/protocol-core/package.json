@@ -1,6 +1,6 @@
 {
   "name": "@quickswap-defi/protocol-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "Pure protocol knowledge for QuickSwap DEX — chains, stablecoins, fees, schema detection",
   "repository": {
