@@ -241,7 +241,8 @@ jobs:
           git add packages/protocol-core/package.json
           git commit -m "chore(release): protocol-core v${VERSION} [skip ci]"
           git tag "protocol-core/v${VERSION}"
-          git push origin HEAD --follow-tags
+          git push origin HEAD
+          git push origin "protocol-core/v${VERSION}"
 
       - name: Get published version
         id: version
