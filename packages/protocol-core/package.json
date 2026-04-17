@@ -3,6 +3,11 @@
   "version": "2.0.0",
   "license": "MIT",
   "description": "Pure protocol knowledge for QuickSwap DEX — chains, stablecoins, fees, schema detection",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/QuickSwap/QuickSwap-sdk",
+    "directory": "packages/protocol-core"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
