@@ -238,7 +238,8 @@ jobs:
           git add packages/sdk/package.json
           git commit -m "chore(release): sdk v${VERSION} [skip ci]"
           git tag "sdk/v${VERSION}"
-          git push origin HEAD --follow-tags
+          git push origin HEAD
+          git push origin "sdk/v${VERSION}"
 
       - name: Get published version
         id: version
