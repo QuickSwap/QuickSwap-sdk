@@ -1,8 +1,18 @@
 name: Publish SDK
 
-# SECURITY: Uses Trusted Publishers (OIDC) — no long-lived tokens
-# Requires NPM trusted publisher config: https://docs.npmjs.com/trusted-publishers
+# Uses npm Trusted Publishers (OIDC). See https://docs.npmjs.com/trusted-publishers
 # Package: @quickswap-defi/sdk
+#
+# REQUIREMENTS (verify before enabling):
+# - bump-and-tag pushes commit + tag to main via GITHUB_TOKEN; the bot/token
+#   must be permitted by branch protection.
+# - Tag protection (if any) permits tags matching sdk/v*.
+# - Signed-commit requirements disabled, or signing configured (out of scope here).
+#
+# Triggers:
+# - workflow_dispatch: full pipeline in one run (jobs chained via needs:).
+# - push:tags sdk/v*.*.*: manual recovery path; bump-and-tag is skipped.
+# Concurrency serializes both paths.
 
 on:
   workflow_dispatch:
@@ -18,7 +28,7 @@ on:
           - prerelease
         default: 'patch'
       dry_run:
-        description: 'Dry run (test without publishing)'
+        description: 'Dry run (preview bump and pack without pushing or publishing)'
         required: false
         type: boolean
         default: false
@@ -30,14 +40,21 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: publish-sdk
+  cancel-in-progress: false
+
 jobs:
   # ============================================
   # JOB 1: Security Audit & Validation
+  # Runs on both workflow_dispatch and push:tags paths.
   # ============================================
   security-audit:
     name: Security Audit
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -61,8 +78,8 @@ jobs:
           echo "Verifying packages/sdk/package.json integrity..."
           node -e "JSON.parse(require('fs').readFileSync('packages/sdk/package.json'))"
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies (with audit)
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Run security audit
         run: pnpm audit --audit-level=high --prod
@@ -76,8 +93,10 @@ jobs:
   build-and-test:
     name: Build & Test
     runs-on: ubuntu-latest
-    needs: security-audit
+    needs: [security-audit]
     timeout-minutes: 10
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -95,7 +114,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Run tests
         run: pnpm --filter @quickswap-defi/sdk test
@@ -112,20 +131,161 @@ jobs:
           echo "Build validation passed"
 
   # ============================================
-  # JOB 3: Publish to NPM (Secure OIDC)
-  # Atomic: bump → build → publish → commit
-  # Version is only committed AFTER successful publish
+  # JOB 3: Bump & Tag (workflow_dispatch only)
+  # Bumps package.json, commits to main, creates and pushes tag atomically.
+  # Skipped on push:tags (the tag already exists on that path).
+  # Retry loop handles non-fast-forward push failures caused by concurrent
+  # commits landing on main between fetch and push.
+  # ============================================
+  bump-and-tag:
+    name: Bump version and push tag
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    needs: [security-audit, build-and-test]
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+      new_sha: ${{ steps.bump.outputs.new_sha }}
+
+    steps:
+      - name: Verify branch is main
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "Error: Can only publish from main branch"
+            exit 1
+          fi
+
+      - name: Checkout main
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '24'
+
+      - name: Configure Git
+        run: |
+          git config user.name "quickswap-bot"
+          git config user.email "bot@quickswap.exchange"
+
+      # --- Dry-run path (preview only) ---
+      - name: Dry run preview
+        if: inputs.dry_run
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          cd packages/sdk
+          CURRENT=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT"
+          npm --ignore-scripts version "$BUMP" --no-git-tag-version --no-commit-hooks
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo ""
+          echo "=== DRY RUN PREVIEW ==="
+          echo "Would commit: chore(release): sdk v${NEW_VERSION} [skip ci]"
+          echo "Would create tag: sdk/v${NEW_VERSION}"
+          echo "Would push to: refs/heads/main + refs/tags/sdk/v${NEW_VERSION}"
+          echo ""
+          echo "Running npm pack --dry-run..."
+          npm pack --dry-run
+          echo ""
+          echo "Running npm publish --dry-run (no registry auth expected)..."
+          npm publish --dry-run --access public
+          echo "=== END DRY RUN ==="
+
+      - name: Dry run cleanup
+        # Restore files mutated by `npm version` so the runner exits clean on dry-run.
+        if: inputs.dry_run
+        run: git checkout -- packages/sdk/package.json
+
+      # --- Real path: atomic bump + tag + push with retry ---
+      - name: Atomic bump, commit, tag, and push (with retry on non-fast-forward)
+        # Retry handles non-fast-forward only. Tag collisions are detected
+        # up-front and fail fast (retry would loop on the same version).
+        if: '!inputs.dry_run'
+        id: bump
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          set -eu
+          MAX_ATTEMPTS=3
+
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo ""
+            echo "=== Bump-and-push attempt ${attempt} of ${MAX_ATTEMPTS} ==="
+
+            # Re-sync each iteration; --prune-tags clears stale local tags
+            # from prior failed iterations.
+            git fetch origin main --tags --prune --prune-tags
+            git reset --hard origin/main
+
+            cd packages/sdk
+            CURRENT=$(node -p "require('./package.json').version")
+            echo "Current version on main: $CURRENT"
+
+            npm --ignore-scripts version "$BUMP" --no-git-tag-version --no-commit-hooks
+            NEW_VERSION=$(node -p "require('./package.json').version")
+            echo "Bumped to: $NEW_VERSION"
+            cd "$GITHUB_WORKSPACE"
+
+            # Tag pre-check: fail fast with a clear error if the tag already exists on origin.
+            EXISTING_TAG_SHA=$(git ls-remote --tags origin "refs/tags/sdk/v${NEW_VERSION}" | awk '{print $1}')
+            if [ -n "$EXISTING_TAG_SHA" ]; then
+              echo "Error: tag sdk/v${NEW_VERSION} already exists on origin (SHA: ${EXISTING_TAG_SHA})."
+              echo "Refusing to overwrite. Bump to a higher version, or delete the existing tag manually if it was created in error."
+              exit 1
+            fi
+
+            git add packages/sdk/package.json
+            git commit -m "chore(release): sdk v${NEW_VERSION} [skip ci]"
+            git tag -a "sdk/v${NEW_VERSION}" -m "Release sdk v${NEW_VERSION}"
+
+            # --atomic: branch + tag rejected together if either fails.
+            # Never use `+` (force).
+            if git push --atomic origin \
+                 "HEAD:refs/heads/main" \
+                 "refs/tags/sdk/v${NEW_VERSION}"; then
+              NEW_SHA=$(git rev-parse HEAD)
+              echo "Successfully pushed commit + tag sdk/v${NEW_VERSION} (SHA: ${NEW_SHA}) on attempt ${attempt}."
+              echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+              echo "new_sha=${NEW_SHA}" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            echo "Push rejected on attempt ${attempt} (likely non-fast-forward due to concurrent commit)."
+
+            if [ "$attempt" -eq "$MAX_ATTEMPTS" ]; then
+              echo "Error: exhausted ${MAX_ATTEMPTS} push attempts."
+              exit 1
+            fi
+
+            echo "Retrying after ${attempt}0s..."
+            sleep $((attempt * 10))
+          done
+
+  # ============================================
+  # JOB 4: Publish to NPM (OIDC).
+  # Runs on workflow_dispatch (after bump-and-tag) and push:tags
+  # (bump-and-tag skipped).
   # ============================================
   publish-npm:
     name: Publish to NPM
     runs-on: ubuntu-latest
-    needs: build-and-test
+    needs: [security-audit, build-and-test, bump-and-tag]
+    # Gate: !cancelled() bypasses skip-propagation when bump-and-tag is
+    # intentionally skipped on the push:tags path.
     if: |
       !cancelled() &&
+      needs.security-audit.result == 'success' &&
       needs.build-and-test.result == 'success' &&
       (
-        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk/v')) ||
-        (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
+        (github.event_name == 'workflow_dispatch' && needs.bump-and-tag.result == 'success' && !inputs.dry_run) ||
+        (github.event_name == 'push' && needs.bump-and-tag.result == 'skipped' && startsWith(github.ref, 'refs/tags/sdk/v'))
       )
     timeout-minutes: 10
     permissions:
@@ -136,27 +296,71 @@ jobs:
       name: npm-sdk
       url: https://www.npmjs.com/package/@quickswap-defi/sdk
 
+    outputs:
+      published: ${{ steps.check_version.outputs.exists == 'false' }}
+      version: ${{ steps.version.outputs.version }}
+
     steps:
-      - name: Verify branch is main
-        if: github.event_name == 'workflow_dispatch'
+      - name: Checkout tag commit
+        # workflow_dispatch: pin to the exact SHA from bump-and-tag.
+        # push:tags: use github.ref_name (the tag).
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && needs.bump-and-tag.outputs.new_sha || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Verify tag commit is on main and was produced by the release bot
+        # Validates ancestry, subject prefix, and author of the tag commit.
         run: |
-          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
-            echo "Error: Can only publish from main branch"
+          # HEAD is the tagged commit after checkout.
+          TAG_SHA=$(git rev-parse HEAD)
+          git fetch origin main
+          echo "origin/main tip : $(git rev-parse origin/main)"
+          echo "tag commit      : ${TAG_SHA}"
+
+          if ! git merge-base --is-ancestor "${TAG_SHA}" origin/main; then
+            echo "Error: ancestry check failed — tag commit ${TAG_SHA} is not reachable from origin/main."
+            echo "The tagged commit must be on the main branch history."
             exit 1
           fi
 
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
+          SUBJECT=$(git log -1 --pretty=%s "${TAG_SHA}")
+          echo "tag commit subject: $SUBJECT"
+          case "$SUBJECT" in
+            "chore(release): sdk v"*)
+              ;;
+            *)
+              echo "Error: subject check failed."
+              exit 1
+              ;;
+          esac
 
-      - name: Verify tag is on main branch
-        if: github.event_name == 'push'
+          AUTHOR_EMAIL=$(git log -1 --pretty=%ae "${TAG_SHA}")
+          AUTHOR_NAME=$(git log -1 --pretty=%an "${TAG_SHA}")
+          echo "tag commit author name : $AUTHOR_NAME"
+          echo "tag commit author email: $AUTHOR_EMAIL"
+
+          if [ "$AUTHOR_EMAIL" != "bot@quickswap.exchange" ]; then
+            echo "Error: author-email check failed."
+            exit 1
+          fi
+
+          if [ "$AUTHOR_NAME" != "quickswap-bot" ]; then
+            echo "Error: author-name check failed."
+            exit 1
+          fi
+
+          echo "Provenance check passed."
+
+      - name: Validate tag matches package.json version
         run: |
-          git fetch origin main
-          if ! git merge-base --is-ancestor $GITHUB_SHA origin/main; then
-            echo "Error: Tag does not point to a commit on main branch"
+          TAG_NAME="${{ github.event_name == 'workflow_dispatch' && format('sdk/v{0}', needs.bump-and-tag.outputs.new_version) || github.ref_name }}"
+          TAG_VERSION="${TAG_NAME#sdk/v}"
+          PKG_VERSION=$(cd packages/sdk && node -p "require('./package.json').version")
+          echo "Tag version     : $TAG_VERSION"
+          echo "package.json    : $PKG_VERSION"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "Error: tag ($TAG_VERSION) does not match package.json ($PKG_VERSION)."
             exit 1
           fi
 
@@ -166,32 +370,29 @@ jobs:
           version: 9
 
       - name: Setup Node.js with NPM registry
+        # Node 24 ships with npm >= 11 which supports OIDC provenance.
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org/'
+          cache: 'pnpm'
 
-      - name: Update npm (required for OIDC)
+      - name: Verify npm version supports provenance
         run: |
-          npm install -g npm@11.5.1
-          npm --version
+          # OIDC provenance landed in npm 9.5.0, not 9.0.0.
+          echo "node: $(node --version)"
+          echo "npm : $(npm --version)"
+          NPM_VERSION=$(npm --version)
+          NPM_MAJOR=$(echo "$NPM_VERSION" | cut -d. -f1)
+          NPM_MINOR=$(echo "$NPM_VERSION" | cut -d. -f2)
+          if [ "$NPM_MAJOR" -lt 9 ] || { [ "$NPM_MAJOR" -eq 9 ] && [ "$NPM_MINOR" -lt 5 ]; }; then
+            echo "Error: npm >= 9.5 required for OIDC provenance; got $NPM_VERSION."
+            exit 1
+          fi
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
-      # --- Version bump (local only, NOT committed yet) ---
-      - name: Bump version locally
-        if: github.event_name == 'workflow_dispatch'
-        id: bump
-        run: |
-          cd packages/sdk
-          echo "Current version: $(node -p "require('./package.json').version")"
-          pnpm version ${{ inputs.bump }} --no-git-tag-version --no-commit-hooks
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "Version bumped to: $NEW_VERSION (local only, not committed)"
-
-      # --- Build and publish ---
       - name: Build package
         run: pnpm --filter @quickswap-defi/sdk build
 
@@ -203,17 +404,52 @@ jobs:
 
       - name: Check if version already exists
         id: check_version
+        env:
+          PACKAGE_NAME: '@quickswap-defi/sdk'
         run: |
-          cd packages/sdk
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          echo "Checking if version $PACKAGE_VERSION already exists..."
-          if npm view "@quickswap-defi/sdk@$PACKAGE_VERSION" version > /dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+          PACKAGE_VERSION=$(cd packages/sdk && node -p "require('./package.json').version")
+          echo "Checking if ${PACKAGE_NAME}@${PACKAGE_VERSION} already exists..."
+
+          EXISTS=""
+          for attempt in 1 2 3; do
+            RAW=$(npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version --json 2>&1) && RC=0 || RC=$?
+
+            if [ "$RC" -eq 0 ] && [ -n "$RAW" ] && [ "$RAW" != "undefined" ]; then
+              EXISTS="true"
+              break
+            fi
+
+            # Some npm versions exit 0 with empty (or literal "undefined")
+            # stdout when the version does not exist. Treat this as a
+            # definitive "not exists" rather than a transient error.
+            if [ "$RC" -eq 0 ] && { [ -z "$RAW" ] || [ "$RAW" = "undefined" ]; }; then
+              EXISTS="false"
+              break
+            fi
+
+            # Definitive "not found": npm prints an E404 in the error payload.
+            if echo "$RAW" | grep -q 'E404'; then
+              EXISTS="false"
+              break
+            fi
+
+            echo "Attempt $attempt: transient error from registry; retrying..."
+            echo "Raw: $RAW"
+            sleep $((attempt * 5))
+          done
+
+          if [ -z "$EXISTS" ]; then
+            echo "Error: npm view failed repeatedly; cannot determine version status."
+            exit 1
           fi
+
+          if [ "$EXISTS" = "true" ]; then
+            echo "Version $PACKAGE_VERSION already exists on registry."
+          else
+            echo "Version $PACKAGE_VERSION is new and can be published."
+          fi
+          echo "exists=$EXISTS" >> "$GITHUB_OUTPUT"
+          echo "version=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Publish to NPM
         if: steps.check_version.outputs.exists == 'false'
@@ -224,68 +460,208 @@ jobs:
         run: |
           echo "Skipping: version ${{ steps.check_version.outputs.version }} already exists"
 
-      # --- Only after successful publish: commit version bump ---
-      - name: Configure Git
-        if: github.event_name == 'workflow_dispatch' && steps.check_version.outputs.exists == 'false'
-        run: |
-          git config user.name "quickswap-bot"
-          git config user.email "bot@quickswap.exchange"
-
-      - name: Commit and push version
-        if: github.event_name == 'workflow_dispatch' && steps.check_version.outputs.exists == 'false'
-        run: |
-          VERSION=$(cd packages/sdk && node -p "require('./package.json').version")
-          git add packages/sdk/package.json
-          git commit -m "chore(release): sdk v${VERSION} [skip ci]"
-          git tag "sdk/v${VERSION}"
-          git push origin HEAD
-          git push origin "sdk/v${VERSION}"
-
       - name: Get published version
         id: version
         run: |
           VERSION=$(cd packages/sdk && node -p "require('./package.json').version")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         if: steps.check_version.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          gh release create "sdk/v${{ steps.version.outputs.version }}" \
-            --title "@quickswap-defi/sdk v${{ steps.version.outputs.version }}" \
-            --notes "## NPM Package Published
-          **Package:** \`@quickswap-defi/sdk@${{ steps.version.outputs.version }}\`
+          set -eu
+          # Idempotent: if a prior partial run already created the release
+          # (e.g., npm publish succeeded then verify-publish failed and the
+          # operator re-runs the failed jobs), `gh release view` exits 0 and
+          # we skip the create. Without this guard, `gh release create` would
+          # fail with "already exists" and abort the job.
+          if gh release view "sdk/v${VERSION}" >/dev/null 2>&1; then
+            echo "GitHub Release sdk/v${VERSION} already exists; skipping creation."
+            exit 0
+          fi
+
+          PRERELEASE_FLAG=""
+          case "$VERSION" in
+            *-*) PRERELEASE_FLAG="--prerelease" ;;
+          esac
+
+          NOTES_FILE=$(mktemp)
+          cat > "$NOTES_FILE" <<EOF
+          ## NPM Package Published
+
+          **Package:** \`@quickswap-defi/sdk@${VERSION}\`
           **NPM:** https://www.npmjs.com/package/@quickswap-defi/sdk
+
           ### Installation
           \`\`\`bash
-          npm install @quickswap-defi/sdk@${{ steps.version.outputs.version }}
-          \`\`\`" \
-            --generate-notes \
-            ${{ contains(steps.version.outputs.version, '-') && '--prerelease' || '' }}
+          npm install @quickswap-defi/sdk@${VERSION}
+          \`\`\`
+
+          ### Verification
+          Published with [NPM Provenance](https://docs.npmjs.com/generating-provenance-statements) for supply chain security.
+          \`\`\`bash
+          npm view @quickswap-defi/sdk@${VERSION} --json
+          \`\`\`
+          EOF
+
+          gh release create "sdk/v${VERSION}" \
+            --title "@quickswap-defi/sdk v${VERSION}" \
+            --notes-file "$NOTES_FILE" \
+            $PRERELEASE_FLAG
 
   # ============================================
-  # JOB 4: Post-Publish Verification
+  # JOB 5: Post-Publish Verification
+  # Verifies registry propagation, Sigstore signatures, and SLSA provenance.
   # ============================================
   verify-publish:
     name: Verify Publication
     runs-on: ubuntu-latest
-    needs: publish-npm
-    if: needs.publish-npm.result == 'success'
-    timeout-minutes: 5
+    needs: [publish-npm]
+    if: |
+      !cancelled() &&
+      needs.publish-npm.result == 'success' &&
+      needs.publish-npm.outputs.published == 'true'
+    # Budget: 5min npm propagation poll + 2.5min Sigstore poll + setup-node +
+    # npm install + npm view calls. 10min was too tight on slow registry days.
+    timeout-minutes: 15
+    permissions:
+      contents: read
 
     steps:
-      - name: Wait for NPM propagation
-        run: sleep 30
+      - name: Setup Node.js 24
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '24'
 
-      - name: Verify package
+      - name: Upgrade npm to a pinned version with --include-attestations support
+        # `--include-attestations` requires npm >= 11.12.0 (adds the
+        # `verified[]` field in `npm audit signatures --json`).
+        # Pin to a specific version (never @latest) so upgrades are explicit.
+        # Pin: npm 11.13.0.
         run: |
-          npm view @quickswap-defi/sdk version
-          npm view @quickswap-defi/sdk --json | jq '.provenance'
+          npm install -g npm@11.13.0
+          INSTALLED_NPM="$(npm --version)"
+          echo "npm: ${INSTALLED_NPM}"
+          if [ "${INSTALLED_NPM}" != "11.13.0" ]; then
+            echo "Error: expected npm 11.13.0, got ${INSTALLED_NPM}"
+            exit 1
+          fi
 
-      - name: Test installation
+      - name: Wait for NPM registry propagation
+        env:
+          VERSION: ${{ needs.publish-npm.outputs.version }}
+        run: |
+          echo "Waiting for @quickswap-defi/sdk@${VERSION} to appear on registry..."
+          for i in $(seq 1 30); do
+            if npm view "@quickswap-defi/sdk@${VERSION}" version >/dev/null 2>&1; then
+              echo "Propagated after ~$((i*10))s"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Timed out waiting for registry propagation"
+          exit 1
+
+      - name: Verify package is published with SLSA provenance (registry metadata)
+        # Assert dist.attestations.provenance.predicateType is a SLSA URI.
+        # jq `//` returns "" for null/missing → missing attestation fails cleanly.
+        env:
+          VERSION: ${{ needs.publish-npm.outputs.version }}
+        run: |
+          npm view "@quickswap-defi/sdk@${VERSION}" --json \
+            | jq -e '.dist.integrity' >/dev/null
+          npm view "@quickswap-defi/sdk@${VERSION}" --json \
+            | jq -e '(.dist.attestations.provenance.predicateType // "") | startswith("https://slsa.dev/provenance/")' >/dev/null
+          echo "Integrity and SLSA provenance attestation present on the published version."
+
+      - name: Test installation (exact version)
+        env:
+          VERSION: ${{ needs.publish-npm.outputs.version }}
         run: |
           mkdir -p /tmp/test-install && cd /tmp/test-install
           npm init -y
-          npm install @quickswap-defi/sdk --ignore-scripts
+          npm install "@quickswap-defi/sdk@${VERSION}" --ignore-scripts
           echo "Package installation successful"
+
+      - name: Verify Sigstore provenance signatures
+        # Assert package@version appears in `verified[]` from
+        # `npm audit signatures --json --include-attestations`.
+        # Exit codes: 0 = clean JSON; 1 = invalid/missing entries (still JSON);
+        # throw = nothing to audit (no JSON output).
+        # Retry covers attestation propagation lag (up to ~2min).
+        env:
+          VERSION: ${{ needs.publish-npm.outputs.version }}
+          PACKAGE_NAME: '@quickswap-defi/sdk'
+        run: |
+          set -eu
+
+          for attempt in $(seq 1 10); do
+            echo ""
+            echo "=== Sigstore verification attempt ${attempt}/10 ==="
+
+            # Fresh install per attempt (avoid npm cache reuse).
+            rm -rf /tmp/verify-signatures
+            mkdir -p /tmp/verify-signatures
+            cd /tmp/verify-signatures
+            npm init -y >/dev/null
+            npm install "${PACKAGE_NAME}@${VERSION}" --ignore-scripts
+
+            # Capture stdout and exit code separately so we can distinguish
+            # JSON output (RC 0/1) from a throw (no JSON).
+            set +e
+            OUT=$(npm audit signatures --json --include-attestations 2>/dev/null)
+            RC=$?
+            set -e
+            echo "npm exit code: ${RC}"
+
+            # Schema gate: must be a JSON object with all three required keys.
+            if ! echo "$OUT" | jq -e 'type == "object" and has("invalid") and has("missing") and has("verified")' >/dev/null 2>&1; then
+              echo "Attempt ${attempt}: invalid or empty audit payload"
+              echo "Raw output: ${OUT:-<empty>}"
+              sleep 15
+              continue
+            fi
+
+            # No invalid or missing signatures.
+            if ! echo "$OUT" | jq -e '(.invalid | length) == 0 and (.missing | length) == 0' >/dev/null; then
+              echo "Attempt ${attempt}: audit reported invalid or missing entries:"
+              echo "$OUT" | jq '{invalid, missing}'
+              sleep 15
+              continue
+            fi
+
+            # Positive assertion: our package@version must be in verified[].
+            if ! echo "$OUT" | jq -e --arg n "$PACKAGE_NAME" --arg v "$VERSION" \
+                 '.verified | map(select(.name == $n and .version == $v)) | length >= 1' >/dev/null; then
+              echo "Attempt ${attempt}: ${PACKAGE_NAME}@${VERSION} not yet present in verified[] (likely attestation propagation lag)"
+              sleep 15
+              continue
+            fi
+
+            # Cross-check: registry metadata also reports SLSA provenance.
+            if ! npm view "${PACKAGE_NAME}@${VERSION}" --json \
+                 | jq -e '(.dist.attestations.provenance.predicateType // "") | startswith("https://slsa.dev/provenance/")' >/dev/null; then
+              echo "Attempt ${attempt}: SLSA provenance not yet visible in registry metadata"
+              sleep 15
+              continue
+            fi
+
+            echo "Sigstore verification PASSED for ${PACKAGE_NAME}@${VERSION} on attempt ${attempt}."
+            exit 0
+          done
+
+          echo "Error: Sigstore verification failed after 10 attempts (150s)."
+          echo "The npm publish itself succeeded, but post-publish verification"
+          echo "could not confirm Sigstore attestation. Investigate before re-publishing:"
+          echo "  npm audit signatures --include-attestations --json"
+          echo "  npm view ${PACKAGE_NAME}@${VERSION} --json"
+          exit 1
+
+      - name: Notify success
+        run: |
+          echo "Publication verified successfully"
+          echo "Package: @quickswap-defi/sdk"
+          echo "NPM: https://www.npmjs.com/package/@quickswap-defi/sdk"
