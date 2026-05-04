@@ -1,0 +1,33 @@
+%% C4 Level 2 — Containers
+%% Inside QuickSwap SDK: packages and how they relate to consumers and libraries.
+%% Edit this file; GitHub renders the diagram natively in markdown previews.
+
+graph TB
+    subgraph EXTERNAL["External"]
+        CONSUMER["dApp / Consumer<br/><i>Imports the SDK</i>"]
+        ETHERS["ethers v5<br/><i>Peer dependency</i>"]
+        JSBI_LIB["JSBI<br/><i>BigInt polyfill</i>"]
+        CHAIN["EVM Chain RPC<br/><i>On-chain reads</i>"]
+    end
+
+    subgraph SYSTEM["QuickSwap SDK monorepo"]
+        subgraph PACKAGES["Packages"]
+            CORE["@quickswap-defi/protocol-core<br/><i>Chains, fees, tokens, versions</i>"]
+            SDK["@quickswap-defi/sdk<br/><i>V2 entities, fetcher, router</i>"]
+        end
+    end
+
+    CONSUMER -->|"imports"| SDK
+    CONSUMER -->|"imports (metadata only)"| CORE
+    SDK -->|"depends on"| CORE
+    SDK -->|"peer dep"| ETHERS
+    SDK -->|"depends on"| JSBI_LIB
+    SDK -->|"reads via provider"| CHAIN
+
+    classDef entity fill:#4a1f6e,stroke:#9b59b6,color:#f0e6ff,font-weight:bold
+    classDef infra fill:#1a3a5c,stroke:#2e86c1,color:#d6eaf8
+    classDef external fill:#1e3a2f,stroke:#27ae60,color:#d5f5e3
+
+    class CORE,SDK entity
+    class ETHERS,JSBI_LIB infra
+    class CONSUMER,CHAIN external
