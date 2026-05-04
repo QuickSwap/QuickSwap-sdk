@@ -5,7 +5,7 @@
 
 <p align="center">
   <a href="docs/overview.md">Overview</a> &bull;
-  <a href="docs/packages/">Packages</a> &bull;
+  <a href="#packages">Packages</a> &bull;
   <a href="docs/flows/">Flows</a> &bull;
   <a href="docs/diagrams/">Diagrams</a> &bull;
   <a href="docs/glossary.md">Glossary</a> &bull;
@@ -24,8 +24,8 @@ Consumers pick metadata only, or the full trading toolkit on top of it.
 
 | Package | Role | Status |
 |---|---|---|
-| [`@quickswap-defi/protocol-core`](docs/packages/protocol-core.md) | Chain configs, protocol versions, fees, native + stablecoin metadata | Published |
-| [`@quickswap-defi/sdk`](docs/packages/sdk.md) | V2 entities (`Token`, `Pair`, `Route`, `Trade`), fetcher, router | Published |
+| [`@quickswap-defi/protocol-core`](packages/protocol-core/) | Chain configs, protocol versions, fees, native + stablecoin metadata | Published |
+| [`@quickswap-defi/sdk`](packages/sdk/) | V2 entities (`Token`, `Pair`, `Route`, `Trade`), fetcher, router | Published |
 
 ## How It Works
 
@@ -60,7 +60,7 @@ Documentation follows [Diátaxis](https://diataxis.fr/) — each doc stays in it
 | Doc | Type | Description |
 |-----|------|-------------|
 | [Overview](docs/overview.md) | Explanation | What the SDK is and why the split exists |
-| [Packages](docs/packages/) | Reference | Per-package role, exports, dependencies |
+| [Packages](#packages) | Reference | Per-package READMEs (also published to npm) |
 | [Flows](docs/flows/) | Explanation | Trade execution and chain onboarding |
 | [Diagrams](docs/diagrams/) | Reference | C4 + sequence mermaid sources |
 | [Glossary](docs/glossary.md) | Reference | Domain terms |
