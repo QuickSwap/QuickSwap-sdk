@@ -7,7 +7,6 @@
   <a href="docs/overview.md">Overview</a> &bull;
   <a href="#packages">Packages</a> &bull;
   <a href="docs/flows/">Flows</a> &bull;
-  <a href="docs/diagrams/">Diagrams</a> &bull;
   <a href="docs/glossary.md">Glossary</a> &bull;
   <a href="docs/adr/">ADRs</a>
 </p>
@@ -26,6 +25,40 @@ Consumers pick metadata only, or the full trading toolkit on top of it.
 |---|---|---|
 | [`@quickswap-defi/protocol-core`](packages/protocol-core/) | Chain configs, protocol versions, fees, native + stablecoin metadata | Published |
 | [`@quickswap-defi/sdk`](packages/sdk/) | V2 entities (`Token`, `Pair`, `Route`, `Trade`), fetcher, router | Published |
+
+## Architecture
+
+```mermaid
+graph TB
+    subgraph EXTERNAL["External"]
+        CONSUMER["dApp / Consumer<br/><i>Imports the SDK</i>"]
+        ETHERS["ethers v5<br/><i>Peer dependency</i>"]
+        JSBI_LIB["JSBI<br/><i>BigInt polyfill</i>"]
+        CHAIN["EVM Chain RPC<br/><i>On-chain reads</i>"]
+    end
+
+    subgraph SYSTEM["QuickSwap SDK monorepo"]
+        subgraph PACKAGES["Packages"]
+            CORE["@quickswap-defi/protocol-core<br/><i>Chains, fees, tokens, versions</i>"]
+            SDK["@quickswap-defi/sdk<br/><i>V2 entities, fetcher, router</i>"]
+        end
+    end
+
+    CONSUMER -->|"imports"| SDK
+    CONSUMER -->|"imports (metadata only)"| CORE
+    SDK -->|"depends on"| CORE
+    SDK -->|"peer dep"| ETHERS
+    SDK -->|"depends on"| JSBI_LIB
+    SDK -->|"reads via provider"| CHAIN
+
+    classDef entity fill:#4a1f6e,stroke:#9b59b6,color:#f0e6ff,font-weight:bold
+    classDef infra fill:#1a3a5c,stroke:#2e86c1,color:#d6eaf8
+    classDef external fill:#1e3a2f,stroke:#27ae60,color:#d5f5e3
+
+    class CORE,SDK entity
+    class ETHERS,JSBI_LIB infra
+    class CONSUMER,CHAIN external
+```
 
 ## How It Works
 
@@ -62,7 +95,6 @@ Documentation follows [Diátaxis](https://diataxis.fr/) — each doc stays in it
 | [Overview](docs/overview.md) | Explanation | What the SDK is and why the split exists |
 | [Packages](#packages) | Reference | Per-package READMEs (also published to npm) |
 | [Flows](docs/flows/) | Explanation | Trade execution and chain onboarding |
-| [Diagrams](docs/diagrams/) | Reference | C4 + sequence mermaid sources |
 | [Glossary](docs/glossary.md) | Reference | Domain terms |
 | [ADRs](docs/adr/) | Decisions | Architecture decision records |
 

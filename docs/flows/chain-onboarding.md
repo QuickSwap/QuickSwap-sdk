@@ -2,10 +2,10 @@
 
 How to add a new EVM chain to the SDK so consumers can use it.
 
-## Diagram
+## Where artifacts live
 
-No dedicated sequence diagram. The container view in
-[../diagrams/c2-containers.mmd](../diagrams/c2-containers.mmd) shows where each artifact lives.
+No dedicated sequence diagram for this flow. The architecture diagram in the root
+[README](../../README.md#architecture) shows the container layout.
 
 ## Steps
 

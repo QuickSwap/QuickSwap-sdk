@@ -2,9 +2,36 @@
 
 How a consumer turns input amounts into a `Trade` with the params needed to execute on-chain.
 
-## Diagram
+## Sequence
 
-See [../diagrams/flow-trade.mmd](../diagrams/flow-trade.mmd).
+```mermaid
+sequenceDiagram
+    autonumber
+    actor C as Consumer
+    participant F as Pair Fetcher
+    participant R as Route
+    participant T as Trade
+
+    C->>C: build Token instances (in, out)
+    C->>F: fetchPairData(tokenA, tokenB, provider)
+    F->>F: derive pair address (factory + init code hash)
+    F-->>C: Pair (with reserves)
+
+    C->>R: new Route([pair, ...], input, output)
+    R-->>C: Route
+
+    alt EXACT_INPUT
+        C->>T: Trade.exactIn(route, inputAmount)
+    else EXACT_OUTPUT
+        C->>T: Trade.exactOut(route, outputAmount)
+    end
+    T-->>C: Trade (inputAmount, outputAmount, priceImpact)
+
+    C->>T: minimumAmountOut(slippage) / maximumAmountIn(slippage)
+    T-->>C: bound CurrencyAmount
+
+    Note over C: Format router calldata, sign, and submit
+```
 
 ## Steps
 
