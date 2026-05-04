@@ -9,6 +9,8 @@ with the trading entities, fetcher, and router.
 
 ```mermaid
 graph TB
+    accTitle: QuickSwap SDK system context
+    accDescr { The SDK is consumed by dApp frontends and backend indexers. It reads pair reserves and token metadata from EVM chains via ethers v5. }
     subgraph PEOPLE["Consumers"]
         ACTOR_1["dApp / Frontend<br/><i>Swap UIs, aggregators</i>"]
         ACTOR_2["Backend / Indexer<br/><i>Analytics, off-chain services</i>"]

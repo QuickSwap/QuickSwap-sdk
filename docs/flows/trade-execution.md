@@ -6,6 +6,8 @@ How a consumer turns input amounts into a `Trade` with the params needed to exec
 
 ```mermaid
 sequenceDiagram
+    accTitle: Trade execution sequence
+    accDescr { Consumer builds Token instances, fetches the Pair via the Pair Fetcher, constructs a Route, instantiates a Trade (exactIn or exactOut), reads slippage bounds, and submits router calldata. }
     autonumber
     actor C as Consumer
     participant F as Pair Fetcher

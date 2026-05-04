@@ -30,6 +30,8 @@ Consumers pick metadata only, or the full trading toolkit on top of it.
 
 ```mermaid
 graph TB
+    accTitle: QuickSwap SDK container architecture
+    accDescr { Two packages — protocol-core (chain registry, fees, tokens) and sdk (V2 entities, fetcher, router) — sit inside the QuickSwap SDK monorepo. Consumers import sdk, sdk depends on protocol-core, ethers v5 is a peer dependency, JSBI provides BigInt math, and sdk reads pair reserves from EVM chains. }
     subgraph EXTERNAL["External"]
         CONSUMER["dApp / Consumer<br/><i>Imports the SDK</i>"]
         ETHERS["ethers v5<br/><i>Peer dependency</i>"]
