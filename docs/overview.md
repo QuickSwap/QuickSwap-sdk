@@ -19,7 +19,7 @@ graph TB
     SYSTEM[["QuickSwap SDK<br/><b>V2 entities + multi-chain protocol metadata</b>"]]
 
     subgraph EXT["External Systems"]
-        EXT_1["EVM Chains<br/><i>Polygon, Base, zkEVM, others</i>"]
+        EXT_1["EVM Chains<br/><i>Polygon, Base, Immutable zkEVM, others</i>"]
         EXT_2["ethers v5<br/><i>RPC provider library</i>"]
     end
 

@@ -1,10 +1,60 @@
 import { describe, it, expect } from 'vitest'
 import { CHAIN_REGISTRY, CHAIN_ID, getChain, getChainOrThrow, getSupportedChainIds } from '../../chains/registry'
-import type { TokenInfo } from '../../chains/types'
+import type { ChainConfig, TokenInfo } from '../../chains/types'
+import * as publicApi from '../../index'
+import {
+  SUPPORTED_CHAINS,
+  SUPPORTED_CHAIN_IDS,
+  SUPPORTED_CHAIN_KEYS,
+  sortedChainIds,
+} from '../fixtures/supported-chains'
 
-const EXPECTED_CHAIN_IDS = [137, 8453, 5888, 169, 1868, 5031, 13371, 196, 1101, 2000, 1]
+function isChainConfig(value: unknown): value is ChainConfig {
+  return typeof value === 'object' && value !== null && 'chainId' in value
+}
 
-describe('chain registry', () => {
+type RetiredChain = { readonly chainId: number; readonly name: string }
+
+const WITHDRAWN_CHAINS: ReadonlyArray<RetiredChain> = [
+  { chainId: 1101, name: 'Polygon zkEVM' },
+  { chainId: 2000, name: 'Dogechain' },
+]
+
+const DAPP_RETIRED_CHAINS: ReadonlyArray<RetiredChain> = [
+  { chainId: 3776, name: 'Astar zkEVM' },
+  { chainId: 195, name: 'X1 testnet' },
+  { chainId: 1261120, name: 'zKatana testnet' },
+  { chainId: 1442, name: 'Polygon zkEVM testnet' },
+  { chainId: 568, name: 'Dogechain testnet' },
+]
+
+function assertStaysUnregistered(chains: ReadonlyArray<RetiredChain>) {
+  it.each(chains)('$name has no registry entry', ({ chainId }) => {
+    const chain = getChain(chainId)
+
+    expect(chain).toBeUndefined()
+  })
+
+  it.each(chains)('$name stays out of the supported list', ({ chainId }) => {
+    const supported = getSupportedChainIds()
+
+    expect(supported).not.toContain(chainId)
+  })
+
+  it.each(chains)('$name cannot be resolved', ({ chainId }) => {
+    expect(() => getChainOrThrow(chainId)).toThrow(`Unsupported chain: ${chainId}`)
+  })
+
+  it.each(chains)('$name is not published by the package', ({ chainId }) => {
+    const publishedChainIds = Object.values(publicApi)
+      .filter(isChainConfig)
+      .map((chain) => chain.chainId)
+
+    expect(publishedChainIds).not.toContain(chainId)
+  })
+}
+
+describe('The chain registry', () => {
   describe('getChain', () => {
     it('returns MANTRA config for chainId 5888', () => {
       const chain = getChain(5888)
@@ -30,13 +80,11 @@ describe('chain registry', () => {
     })
   })
 
-  describe('getSupportedChainIds', () => {
-    it('has length 11', () => {
-      expect(getSupportedChainIds()).toHaveLength(11)
-    })
+  describe('The supported chain list', () => {
+    it('matches the expected set of chains exactly', () => {
+      const supported = getSupportedChainIds()
 
-    it.each(EXPECTED_CHAIN_IDS)('contains chainId %i', (chainId) => {
-      expect(getSupportedChainIds()).toContain(chainId)
+      expect(sortedChainIds(supported)).toEqual(sortedChainIds(SUPPORTED_CHAIN_IDS))
     })
   })
 
@@ -51,23 +99,15 @@ describe('chain registry', () => {
     })
   })
 
-  describe('CHAIN_ID', () => {
-    it('maps names to correct chain IDs', () => {
-      expect(CHAIN_ID.POLYGON).toBe(137)
-      expect(CHAIN_ID.BASE).toBe(8453)
-      expect(CHAIN_ID.MANTRA).toBe(5888)
-      expect(CHAIN_ID.MANTA).toBe(169)
-      expect(CHAIN_ID.SONEIUM).toBe(1868)
-      expect(CHAIN_ID.SOMNIA).toBe(5031)
-      expect(CHAIN_ID.IMX).toBe(13371)
-      expect(CHAIN_ID.XLAYER).toBe(196)
-      expect(CHAIN_ID.ZKEVM).toBe(1101)
-      expect(CHAIN_ID.DOGECHAIN).toBe(2000)
-      expect(CHAIN_ID.ETHEREUM).toBe(1)
+  describe('The chain ID map', () => {
+    it('maps every chain key to its chain ID', () => {
+      const mapped = SUPPORTED_CHAINS.map(({ key }) => CHAIN_ID[key])
+
+      expect(mapped).toEqual([...SUPPORTED_CHAIN_IDS])
     })
 
-    it('has same keys as registry', () => {
-      expect(Object.keys(CHAIN_ID)).toHaveLength(getSupportedChainIds().length)
+    it('names exactly the supported chains', () => {
+      expect(Object.keys(CHAIN_ID)).toEqual([...SUPPORTED_CHAIN_KEYS])
     })
 
     it('every CHAIN_ID value exists in registry', () => {
@@ -113,5 +153,13 @@ describe('chain registry', () => {
       const polygon = getChain(137)!
       expect(Object.isFrozen(polygon.wrappedNative)).toBe(true)
     })
+  })
+
+  describe('The chains withdrawn from this registry', () => {
+    assertStaysUnregistered(WITHDRAWN_CHAINS)
+  })
+
+  describe('The chains retired from the dapp before this registry existed', () => {
+    assertStaysUnregistered(DAPP_RETIRED_CHAINS)
   })
 })

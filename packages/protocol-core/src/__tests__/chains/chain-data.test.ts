@@ -7,8 +7,6 @@ import { SONEIUM } from '../../chains/soneium'
 import { SOMNIA } from '../../chains/somnia'
 import { IMX } from '../../chains/imx'
 import { XLAYER } from '../../chains/xlayer'
-import { ZKEVM } from '../../chains/zkevm'
-import { DOGECHAIN } from '../../chains/dogechain'
 import { ETHEREUM } from '../../chains/ethereum'
 import type { ChainConfig } from '../../chains/types'
 
@@ -21,12 +19,10 @@ const ALL_CHAINS: ChainConfig[] = [
   SOMNIA,
   IMX,
   XLAYER,
-  ZKEVM,
-  DOGECHAIN,
   ETHEREUM,
 ]
 
-describe('chain data integrity', () => {
+describe('The chain configuration data', () => {
   describe('basic fields', () => {
     it.each(ALL_CHAINS)('$name has positive chainId', (chain) => {
       expect(chain.chainId).toBeGreaterThan(0)
@@ -57,7 +53,7 @@ describe('chain data integrity', () => {
     })
   })
 
-  describe('stablecoin counts', () => {
+  describe('The stablecoin coverage', () => {
     it('Polygon has 4 stablecoins', () => {
       expect(POLYGON.stablecoins).toHaveLength(4)
     })
@@ -90,20 +86,12 @@ describe('chain data integrity', () => {
       expect(XLAYER.stablecoins).toHaveLength(3)
     })
 
-    it('zkEVM has 3 stablecoins', () => {
-      expect(ZKEVM.stablecoins).toHaveLength(3)
-    })
-
-    it('Dogechain has 3 stablecoins', () => {
-      expect(DOGECHAIN.stablecoins).toHaveLength(3)
-    })
-
     it('Ethereum has 3 stablecoins', () => {
       expect(ETHEREUM.stablecoins).toHaveLength(3)
     })
   })
 
-  describe('protocol entries', () => {
+  describe('The protocol entries', () => {
     it('Ethereum has empty protocols (aggregation-only)', () => {
       expect(ETHEREUM.protocols).toHaveLength(0)
     })
@@ -116,16 +104,6 @@ describe('chain data integrity', () => {
     it('Base protocols: v4 before v2', () => {
       expect(BASE.protocols[0].version).toBe('v4')
       expect(BASE.protocols[1].version).toBe('v2')
-    })
-
-    it('Dogechain protocols: v3 before v2', () => {
-      expect(DOGECHAIN.protocols[0].version).toBe('v3')
-      expect(DOGECHAIN.protocols[1].version).toBe('v2')
-    })
-
-    it('zkEVM protocols: v3 before univ3', () => {
-      expect(ZKEVM.protocols[0].version).toBe('v3')
-      expect(ZKEVM.protocols[1].version).toBe('univ3')
     })
 
     it('MANTRA has v4 with exposeDynamicFee', () => {
@@ -150,21 +128,6 @@ describe('chain data integrity', () => {
     it('Ethereum includes USDT', () => {
       const symbols = ETHEREUM.stablecoins.map((s) => s.symbol)
       expect(symbols).toContain('USDT')
-    })
-  })
-
-  describe('Dogechain DAI isolation', () => {
-    const ZKEVM_DAI_ADDRESS = '0xC5015b9d9161Dca7e18e32f6f25C4aD850731Fd4'
-
-    it('Dogechain DAI is NOT the zkEVM DAI address', () => {
-      const dogeDai = DOGECHAIN.stablecoins.find((s) => s.symbol === 'DAI')
-      expect(dogeDai).toBeDefined()
-      expect(dogeDai!.address).not.toBe(ZKEVM_DAI_ADDRESS)
-    })
-
-    it('Dogechain DAI address is the correct Dogechain-native DAI', () => {
-      const dogeDai = DOGECHAIN.stablecoins.find((s) => s.symbol === 'DAI')
-      expect(dogeDai!.address).toBe('0x639A647fbe20b6c8ac19E48E2de44ea792c62c5C')
     })
   })
 })
