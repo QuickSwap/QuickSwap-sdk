@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { CHAIN_REGISTRY, CHAIN_ID, getChain, getChainOrThrow, getSupportedChainIds } from '../../chains/registry'
-import type { ChainConfig, TokenInfo } from '../../chains/types'
+import type { ChainConfig, TokenInfo, ProtocolDeployment } from '../../chains/types'
 import * as publicApi from '../../index'
 import {
   SUPPORTED_CHAINS,
@@ -152,6 +152,40 @@ describe('The chain registry', () => {
     it('wrappedNative object is frozen', () => {
       const polygon = getChain(137)!
       expect(Object.isFrozen(polygon.wrappedNative)).toBe(true)
+    })
+
+    it('freezes the deployments array', () => {
+      const polygon = getChain(137)!
+
+      expect(polygon.deployments).toBeDefined()
+      expect(Object.isFrozen(polygon.deployments)).toBe(true)
+    })
+
+    it('freezes every deployment entry', () => {
+      const polygon = getChain(137)!
+
+      expect(polygon.deployments).toBeDefined()
+      expect(polygon.deployments!.length).toBeGreaterThan(0)
+      for (const deployment of polygon.deployments!) {
+        expect(Object.isFrozen(deployment)).toBe(true)
+      }
+    })
+
+    it('refuses a deployment appended to a published chain', () => {
+      const polygon = getChain(137)!
+      const lengthBefore = polygon.deployments!.length
+
+      try {
+        ;(polygon.deployments as ProtocolDeployment[]).push({
+          version: 'v2',
+          factory: '0x0000000000000000000000000000000000000000',
+          swapRouter: '0x0000000000000000000000000000000000000000',
+        })
+      } catch {
+        // strict mode throws — acceptable
+      }
+
+      expect(polygon.deployments).toHaveLength(lengthBefore)
     })
   })
 
