@@ -1,5 +1,6 @@
 import { keccak_256 } from '@noble/hashes/sha3'
 import { getSupportedChainIds, getChain } from '../src/chains/registry'
+import { checkDeploymentCoherence } from '../src/chains/deploymentCoherence'
 
 function toChecksumAddress(address: string): string {
   const addr = address.toLowerCase().replace('0x', '')
@@ -68,10 +69,12 @@ for (const chainId of chainIds) {
       )
     }
   }
+
+  errors.push(...checkDeploymentCoherence(chain))
 }
 
 if (errors.length > 0) {
-  console.error(`\n❌ ${errors.length} invalid EIP-55 checksum(s) found:\n`)
+  console.error(`\n❌ ${errors.length} address validation error(s) found:\n`)
   errors.forEach((e) => console.error(`  • ${e}`))
   console.error('')
   process.exit(1)
