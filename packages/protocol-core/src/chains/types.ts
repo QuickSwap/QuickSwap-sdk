@@ -40,4 +40,47 @@ export interface ChainConfig {
   readonly wrappedNative: TokenInfo
   readonly protocols: ReadonlyArray<ChainProtocolEntry>
   readonly stablecoins: ReadonlyArray<TokenInfo>
+  /** Aggregator contract used to batch read calls. Version-agnostic. */
+  readonly multicall?: string
+  readonly deployments?: ReadonlyArray<ProtocolDeployment>
 }
+
+interface DeploymentBase {
+  readonly factory: string
+  readonly swapRouter: string
+}
+
+interface ConcentratedDeploymentBase extends DeploymentBase {
+  readonly quoter: string
+  readonly positionManager: string
+}
+
+/**
+ * V2 pairs are fungible ERC20 tokens priced by closed-form constant-product
+ * math, so this family deploys no quoter and no position manager.
+ */
+export interface V2Deployment extends DeploymentBase {
+  readonly version: typeof PROTOCOL_VERSIONS.V2
+}
+
+export interface V3Deployment extends ConcentratedDeploymentBase {
+  readonly version: typeof PROTOCOL_VERSIONS.V3
+  /** Algebra derives pool addresses from this contract rather than from `factory`. */
+  readonly poolDeployer: string
+}
+
+export interface V4Deployment extends ConcentratedDeploymentBase {
+  readonly version: typeof PROTOCOL_VERSIONS.V4
+  /** Algebra derives pool addresses from this contract rather than from `factory`. */
+  readonly poolDeployer: string
+}
+
+/** Uniswap-V3 fork family: pools are derived from `factory`, so no pool deployer exists. */
+export interface UniV3Deployment extends ConcentratedDeploymentBase {
+  readonly version: typeof PROTOCOL_VERSIONS.UNIV3
+}
+
+export type ProtocolDeployment = V2Deployment | V3Deployment | V4Deployment | UniV3Deployment
+
+/** Narrows `ProtocolDeployment` to the single family matching a protocol version. */
+export type DeploymentFor<V extends ProtocolVersion> = Extract<ProtocolDeployment, { version: V }>

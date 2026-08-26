@@ -29,11 +29,32 @@ const stables = getStablecoins(137)
 const feeAmount = computeV2Fee(1_000_000n) // V2 swap fee in raw units
 ```
 
+## Contract deployments
+
+A chain config may carry a version-agnostic `multicall` address and a `deployments`
+list. Each entry is discriminated by protocol version, so `getDeployment` returns
+exactly the contracts that family deploys.
+
+```ts
+import { getDeployment, PROTOCOL_VERSIONS } from '@quickswap-defi/protocol-core'
+
+const algebra = getDeployment(137, PROTOCOL_VERSIONS.V3)
+algebra?.poolDeployer // Algebra derives pools from a pool deployer
+
+const uniswapFork = getDeployment(169, PROTOCOL_VERSIONS.UNIV3)
+uniswapFork?.factory // the Uniswap-V3 fork derives pools from the factory
+```
+
+Both fields are optional: a chain config without them is still valid, and
+`getDeployment` yields `undefined` for any version a chain does not deploy.
+
 ## Public API
 
 - **Registry** — `CHAIN_REGISTRY`, `CHAIN_ID`, `getChain`, `getChainOrThrow`, `getSupportedChainIds`
+- **Deployments** — `getDeployment`
 - **Per-chain configs** — `POLYGON`, `BASE`, `MANTRA`, `MANTA`, `SONEIUM`, `SOMNIA`, `IMX`, `XLAYER`, `ETHEREUM`
 - **Types** — `ChainConfig`, `ChainProtocolEntry`, `ProtocolVersion`, `SchemaVariant`, `TokenInfo`
+- **Deployment types** — `ProtocolDeployment`, `V2Deployment`, `V3Deployment`, `V4Deployment`, `UniV3Deployment`, `DeploymentFor`
 - **Constants** — `PROTOCOL_VERSIONS`, `SCHEMA_VARIANTS`
 - **Protocol helpers** — `getSchemaVariant`, `getSupportedVersions`, `getProtocolVersionLabel`
 - **Fees** — `V2_FEE_BPS`, `V2_FEE_RATE`, `computeV2Fee`

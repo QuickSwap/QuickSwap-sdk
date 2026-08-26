@@ -7,15 +7,7 @@ import {
   getChain,
   getChainOrThrow,
   getSupportedChainIds,
-  POLYGON,
-  BASE,
-  MANTRA,
-  MANTA,
-  SONEIUM,
-  SOMNIA,
-  IMX,
-  XLAYER,
-  ETHEREUM,
+  getDeployment,
   getSchemaVariant,
   getSupportedVersions,
   getProtocolVersionLabel,
@@ -29,7 +21,12 @@ import {
   getWrappedNative,
 } from '../index'
 import * as publicApi from '../index'
-import { SUPPORTED_CHAIN_IDS } from './fixtures/supported-chains'
+import type { ChainConfig } from '../chains/types'
+import { SUPPORTED_CHAIN_IDS, sortedChainIds } from './fixtures/supported-chains'
+
+function isChainConfig(value: unknown): value is ChainConfig {
+  return typeof value === 'object' && value !== null && 'chainId' in value
+}
 
 describe('The public API surface', () => {
   it('publishes the protocol and schema vocabularies', () => {
@@ -46,9 +43,16 @@ describe('The public API surface', () => {
   })
 
   it('publishes one config per supported chain', () => {
-    const published = [POLYGON, BASE, MANTRA, MANTA, SONEIUM, SOMNIA, IMX, XLAYER, ETHEREUM]
+    const publishedChainIds = Object.values(publicApi)
+      .filter(isChainConfig)
+      .map((chain) => chain.chainId)
 
-    expect(published.map(({ chainId }) => chainId)).toEqual([...SUPPORTED_CHAIN_IDS])
+    expect(sortedChainIds(publishedChainIds)).toEqual(sortedChainIds(SUPPORTED_CHAIN_IDS))
+    expect(sortedChainIds(publishedChainIds)).toEqual(sortedChainIds(getSupportedChainIds()))
+  })
+
+  it('publishes the deployment lookup', () => {
+    expect(typeof getDeployment).toBe('function')
   })
 
   it('publishes the protocol version helpers', () => {
@@ -71,9 +75,9 @@ describe('The public API surface', () => {
     expect(typeof getWrappedNative).toBe('function')
   })
 
-  it('publishes exactly 27 runtime members (types excluded)', () => {
+  it('publishes exactly 28 runtime members (types excluded)', () => {
     const runtimeExports = Object.keys(publicApi)
 
-    expect(runtimeExports).toHaveLength(27)
+    expect(runtimeExports).toHaveLength(28)
   })
 })
