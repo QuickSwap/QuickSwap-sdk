@@ -3,12 +3,6 @@ name: Publish Protocol Core
 # Uses npm Trusted Publishers (OIDC). See https://docs.npmjs.com/trusted-publishers
 # Package: @quickswap-defi/protocol-core
 #
-# REQUIREMENTS (verify before enabling):
-# - bump-and-tag pushes commit + tag to main via GITHUB_TOKEN; the bot/token
-#   must be permitted by branch protection.
-# - Tag protection (if any) permits tags matching protocol-core/v*.
-# - Signed-commit requirements disabled, or signing configured (out of scope here).
-#
 # Triggers:
 # - workflow_dispatch: full pipeline in one run (jobs chained via needs:).
 # - push:tags protocol-core/v*.*.*: manual recovery path; bump-and-tag is skipped.
