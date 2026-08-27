@@ -5,10 +5,17 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
     "build:protocol-core": "pnpm --filter @quickswap-defi/protocol-core build",
     "build:sdk": "pnpm --filter @quickswap-defi/sdk build",
     "test:protocol-core": "pnpm --filter @quickswap-defi/protocol-core test",
     "test:sdk": "pnpm --filter @quickswap-defi/sdk test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.39.5",
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.0.0"
   },
   "pnpm": {
     "overrides": {

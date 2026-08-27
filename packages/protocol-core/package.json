@@ -26,13 +26,16 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint src/",
+    "lint": "eslint src/ scripts/",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "validate:addresses": "tsx scripts/validate-addresses.ts",
     "prepublishOnly": "pnpm test && pnpm build && pnpm validate:addresses"
   },
   "devDependencies": {
     "@noble/hashes": "^1.7.0",
+    "@types/node": "^20.0.0",
     "@vitest/coverage-v8": "^2.0.0",
+    "eslint": "^9.39.5",
     "tsup": "^8.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.5.0",
