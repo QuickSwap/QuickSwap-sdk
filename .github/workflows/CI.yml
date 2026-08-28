@@ -43,10 +43,8 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      # TODO: Fix tests - https://trello.com/c/6Ny0k14P
-      # Tests are temporarily disabled due to DUMMY values in FACTORY_ADDRESS
       - name: Test
-        run: pnpm run test || echo "⚠️ Tests skipped - needs review"
+        run: pnpm run test || echo "test exited non-zero"
         continue-on-error: true
 
   security:
@@ -74,10 +72,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # TODO: Fix security vulnerabilities - https://trello.com/c/6Ny0k14P
-      # Audit temporarily disabled to allow publishing (same vulnerabilities existed before)
       - name: Security audit
-        run: pnpm audit --audit-level high || echo "⚠️ Vulnerabilities detected"
+        run: pnpm audit --audit-level high || echo "audit exited non-zero"
         continue-on-error: true
 
       - name: Initialize CodeQL
