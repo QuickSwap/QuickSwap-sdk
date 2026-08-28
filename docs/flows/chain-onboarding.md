@@ -10,8 +10,10 @@ No dedicated sequence diagram for this flow. The architecture diagram in the roo
 ## Steps
 
 1. **protocol-core — chain config.** Create `packages/protocol-core/src/chains/<chain>.ts`
-   exporting a `ChainConfig` with chain id, name, native token, wrapped native, supported
-   protocol versions, schema variant, and stablecoin list.
+   exporting a `ChainConfig` with chain id, name, native symbol, wrapped native, supported
+   protocol versions, and stablecoin list. Add the chain-level `multicall` address and one
+   `deployments` entry per protocol version the chain runs. Both fields are optional, but a
+   chain without `deployments` resolves to `undefined` from `getDeployment`.
 2. **protocol-core — registry.** Import and register the new config in
    `packages/protocol-core/src/chains/registry.ts` (both `_registry` and `CHAIN_ID`).
 3. **protocol-core — barrel.** Re-export the new chain config from
@@ -26,7 +28,9 @@ No dedicated sequence diagram for this flow. The architecture diagram in the roo
 
 ## Inputs
 
-- Chain id, factory deployment address, native + wrapped native metadata, stablecoin list.
+- Chain id, native + wrapped native metadata, stablecoin list, multicall address, and the
+  contract addresses each protocol version deploys — factory and swap router for every family,
+  plus quoter, position manager and pool deployer where that family declares them.
 
 ## Outputs
 

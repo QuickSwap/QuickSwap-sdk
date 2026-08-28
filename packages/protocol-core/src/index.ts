@@ -1,9 +1,20 @@
 // Types
 export type { ProtocolVersion, SchemaVariant, TokenInfo, ChainProtocolEntry, ChainConfig } from './chains/types'
+export type {
+  ProtocolDeployment,
+  V2Deployment,
+  V3Deployment,
+  V4Deployment,
+  UniV3Deployment,
+  DeploymentFor,
+} from './chains/types'
 export { PROTOCOL_VERSIONS, SCHEMA_VARIANTS } from './chains/types'
 
 // Chain Registry
 export { CHAIN_REGISTRY, CHAIN_ID, getChain, getChainOrThrow, getSupportedChainIds } from './chains/registry'
+
+// Deployment Lookup
+export { getDeployment } from './chains/deployments'
 
 // Individual Chain Configs
 export { POLYGON } from './chains/polygon'
