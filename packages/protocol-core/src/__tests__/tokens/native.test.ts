@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { getNativeToken, getWrappedNative } from '../../tokens/native'
+import { SUPPORTED_CHAIN_IDS } from '../fixtures/supported-chains'
 
 describe('tokens/native', () => {
   describe('getNativeToken', () => {
@@ -46,14 +47,14 @@ describe('tokens/native', () => {
     })
   })
 
-  describe('address equality', () => {
-    it('getNativeToken and getWrappedNative share the same address', () => {
-      const chains = [137, 8453, 5888, 169, 1868, 5031, 13371, 196, 1101, 2000, 1]
-      for (const chainId of chains) {
-        const native = getNativeToken(chainId)
-        const wrapped = getWrappedNative(chainId)
-        expect(native?.address).toBe(wrapped?.address)
-      }
+  describe('The native and wrapped token addresses', () => {
+    it.each(SUPPORTED_CHAIN_IDS)('match each other on chain %i', (chainId) => {
+      const native = getNativeToken(chainId)
+      const wrapped = getWrappedNative(chainId)
+
+      expect(native).toBeDefined()
+      expect(wrapped).toBeDefined()
+      expect(native!.address).toBe(wrapped!.address)
     })
   })
 })

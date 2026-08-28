@@ -7,8 +7,6 @@ import { SONEIUM } from './soneium'
 import { SOMNIA } from './somnia'
 import { IMX } from './imx'
 import { XLAYER } from './xlayer'
-import { ZKEVM } from './zkevm'
-import { DOGECHAIN } from './dogechain'
 import { ETHEREUM } from './ethereum'
 
 function deepFreeze<T extends object>(obj: T): Readonly<T> {
@@ -30,8 +28,6 @@ const _registry: Record<number, ChainConfig> = {
   [SOMNIA.chainId]: SOMNIA,
   [IMX.chainId]: IMX,
   [XLAYER.chainId]: XLAYER,
-  [ZKEVM.chainId]: ZKEVM,
-  [DOGECHAIN.chainId]: DOGECHAIN,
   [ETHEREUM.chainId]: ETHEREUM,
 }
 
@@ -62,7 +58,5 @@ export const CHAIN_ID = {
   SOMNIA: SOMNIA.chainId,
   IMX: IMX.chainId,
   XLAYER: XLAYER.chainId,
-  ZKEVM: ZKEVM.chainId,
-  DOGECHAIN: DOGECHAIN.chainId,
   ETHEREUM: ETHEREUM.chainId,
 } as const

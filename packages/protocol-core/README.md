@@ -32,7 +32,7 @@ const feeAmount = computeV2Fee(1_000_000n) // V2 swap fee in raw units
 ## Public API
 
 - **Registry** — `CHAIN_REGISTRY`, `CHAIN_ID`, `getChain`, `getChainOrThrow`, `getSupportedChainIds`
-- **Per-chain configs** — `POLYGON`, `BASE`, `MANTRA`, `MANTA`, `SONEIUM`, `SOMNIA`, `IMX`, `XLAYER`, `ZKEVM`, `DOGECHAIN`, `ETHEREUM`
+- **Per-chain configs** — `POLYGON`, `BASE`, `MANTRA`, `MANTA`, `SONEIUM`, `SOMNIA`, `IMX`, `XLAYER`, `ETHEREUM`
 - **Types** — `ChainConfig`, `ChainProtocolEntry`, `ProtocolVersion`, `SchemaVariant`, `TokenInfo`
 - **Constants** — `PROTOCOL_VERSIONS`, `SCHEMA_VARIANTS`
 - **Protocol helpers** — `getSchemaVariant`, `getSupportedVersions`, `getProtocolVersionLabel`

@@ -14,8 +14,6 @@ export { SONEIUM } from './chains/soneium'
 export { SOMNIA } from './chains/somnia'
 export { IMX } from './chains/imx'
 export { XLAYER } from './chains/xlayer'
-export { ZKEVM } from './chains/zkevm'
-export { DOGECHAIN } from './chains/dogechain'
 export { ETHEREUM } from './chains/ethereum'
 
 // Protocol Functions
