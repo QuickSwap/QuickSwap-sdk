@@ -10,7 +10,7 @@ import { XLAYER } from '../../chains/xlayer'
 import { ETHEREUM } from '../../chains/ethereum'
 import { CHAIN_REGISTRY } from '../../chains/registry'
 import { checkDeploymentCoherence } from '../../chains/deploymentCoherence'
-import type { ChainConfig } from '../../chains/types'
+import type { ChainConfig, ProtocolVersion } from '../../chains/types'
 
 const ALL_CHAINS: ChainConfig[] = [
   POLYGON,
@@ -39,6 +39,28 @@ const UNISWAP_FORK_ADDRESSES = [
     factory: '0x56c2162254b0E4417288786eE402c2B41d4e181e',
     positionManager: '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff',
   },
+]
+
+const EVM_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/
+
+// Exact aggregator address per chain. Some of these literals also appear on
+// other chains in the registry, so each is pinned per chain rather than shared.
+const MULTICALL_ADDRESSES = [
+  { chain: BASE, multicall: '0xfEE958Fa595B4478cea7560C91400A98b83d6C91' },
+  { chain: MANTRA, multicall: '0xcA11bde05977b3631167028862bE2a173976CA11' },
+  { chain: SONEIUM, multicall: '0x69465675e2125414f26ED3139218abBDDe3C4daa' },
+  { chain: SOMNIA, multicall: '0x5e44F178E8cF9B2F5409B6f18ce936aB817C5a11' },
+  { chain: XLAYER, multicall: '0xc7efb32470dEE601959B15f1f923e017C6A918cA' },
+]
+
+/** Every entry whose family derives pools from a dedicated deployer. */
+const ALGEBRA_ENTRIES: ReadonlyArray<{ chain: ChainConfig; version: ProtocolVersion }> = [
+  { chain: POLYGON, version: 'v3' },
+  { chain: BASE, version: 'v4' },
+  { chain: MANTRA, version: 'v4' },
+  { chain: SONEIUM, version: 'v4' },
+  { chain: SOMNIA, version: 'v4' },
+  { chain: XLAYER, version: 'v3' },
 ]
 
 describe('The chain configuration data', () => {
@@ -143,12 +165,19 @@ describe('The chain configuration data', () => {
       expect(CHAINS_WITH_DEPLOYMENTS.length).toBeGreaterThan(1)
     })
 
-    it('lists the Polygon entries in the order its protocols declare them', () => {
-      const declaredOrder = POLYGON.protocols.map((protocol) => protocol.version)
-      const deployedOrder = POLYGON.deployments!.map((deployment) => deployment.version)
-
-      expect(deployedOrder).toEqual(declaredOrder)
+    it('leaves the aggregation-only chain without deployments', () => {
+      expect(ETHEREUM.deployments).toBeUndefined()
     })
+
+    it.each(CHAINS_WITH_DEPLOYMENTS)(
+      'gives $name one entry per protocol version it declares, in declaration order',
+      (chain) => {
+        const declaredOrder = chain.protocols.map((protocol) => protocol.version)
+        const deployedOrder = chain.deployments!.map((deployment) => deployment.version)
+
+        expect(deployedOrder).toEqual(declaredOrder)
+      },
+    )
 
     it.each([MANTA, IMX])('gives $name the single Uniswap-V3 fork entry it declares', (chain) => {
       const versions = chain.deployments!.map((deployment) => deployment.version)
@@ -160,12 +189,6 @@ describe('The chain configuration data', () => {
       const v2 = POLYGON.deployments!.find((deployment) => deployment.version === 'v2')!
 
       expect(Object.keys(v2).sort()).toEqual(['factory', 'swapRouter', 'version'])
-    })
-
-    it('gives the Polygon Algebra entry a pool deployer', () => {
-      const v3 = POLYGON.deployments!.find((deployment) => deployment.version === 'v3')!
-
-      expect(v3).toHaveProperty('poolDeployer')
     })
 
     it.each([MANTA, IMX])('leaves the $name entry without a pool deployer', (chain) => {
@@ -185,6 +208,21 @@ describe('The chain configuration data', () => {
         expect(univ3).toHaveProperty('positionManager', positionManager)
       },
     )
+
+    it.each(ALGEBRA_ENTRIES)(
+      'gives the $chain.name $version entry a pool deployer address',
+      ({ chain, version }) => {
+        const entry = chain.deployments!.find((deployment) => deployment.version === version)!
+
+        expect(entry).toHaveProperty('poolDeployer', expect.stringMatching(EVM_ADDRESS_RE))
+      },
+    )
+
+    it('limits the Base v2 entry to the contracts that family deploys', () => {
+      const v2 = BASE.deployments!.find((deployment) => deployment.version === 'v2')!
+
+      expect(Object.keys(v2).sort()).toEqual(['factory', 'swapRouter', 'version'])
+    })
   })
 
   describe('The multicall addresses', () => {
@@ -193,7 +231,18 @@ describe('The chain configuration data', () => {
     })
 
     it.each(CHAINS_WITH_MULTICALL)('gives $name a multicall address', (chain) => {
-      expect(chain.multicall).toMatch(/^0x[0-9a-fA-F]{40}$/)
+      expect(chain.multicall).toMatch(EVM_ADDRESS_RE)
+    })
+
+    it.each(CHAINS_WITH_DEPLOYMENTS)(
+      'gives $name an aggregator alongside the deployments it carries',
+      (chain) => {
+        expect(chain.multicall).toMatch(EVM_ADDRESS_RE)
+      },
+    )
+
+    it.each(MULTICALL_ADDRESSES)('pins the $chain.name aggregator', ({ chain, multicall }) => {
+      expect(chain.multicall).toBe(multicall)
     })
   })
 
