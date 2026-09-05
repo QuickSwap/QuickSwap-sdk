@@ -29,6 +29,7 @@
     "lint": "eslint src/ scripts/",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "validate:addresses": "tsx scripts/validate-addresses.ts",
+    "verify:onchain": "tsx scripts/verify-onchain.ts",
     "prepublishOnly": "pnpm test && pnpm build && pnpm validate:addresses"
   },
   "devDependencies": {
