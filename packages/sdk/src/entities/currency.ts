@@ -39,7 +39,8 @@ export class Currency {
     [ChainId.SOMNIA_TESTNET]: new Currency(18, 'STT', 'Somnia Testnet Tokens'),
     [ChainId.BASE]: new Currency(18, 'ETH', 'Ether'),
     [ChainId.SOMNIA]: new Currency(18, 'SOMI', 'Somnia Tokens'),
-    [ChainId.MANTRA]: new Currency(18, 'MANTRA', 'Mantra Token')
+    [ChainId.MANTRA]: new Currency(18, 'MANTRA', 'Mantra Token'),
+    [ChainId.ANUBIS]: new Currency(18, 'DAI', 'DAI'),
   }
 
   /**
