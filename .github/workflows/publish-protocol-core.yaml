@@ -172,6 +172,20 @@ jobs:
           git config user.email "bot@quickswap.exchange"
 
       # --- Dry-run path (preview only) ---
+      - name: Install pnpm (dry run)
+        if: inputs.dry_run
+        uses: pnpm/action-setup@b307475762933b98ed359c036b0e51f26b63b74b # v5.0.0
+        with:
+          version: 9
+
+      - name: Install dependencies (dry run)
+        if: inputs.dry_run
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build package (dry run)
+        if: inputs.dry_run
+        run: pnpm --filter @quickswap-defi/protocol-core build
+
       - name: Dry run preview
         if: inputs.dry_run
         env:
