@@ -56,7 +56,7 @@ export function currencyEquals(currencyA: Currency, currencyB: Currency): boolea
   }
 }
 
-export const WETH = {
+export const WETH: Partial<Record<ChainId, Token>> = {
   [ChainId.MUMBAI]: new Token(
     ChainId.MUMBAI,
     '0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889',
@@ -157,4 +157,11 @@ export const WETH = {
     'WMANTRA',
     'Wrapped MANTRA'
   )
+  // ChainId.ANUBIS has no entry: its gas token is the ERC-20 DAI and there is no wrapped-native contract.
+}
+
+export function wrappedNative(chainId: ChainId): Token {
+  const token = WETH[chainId]
+  invariant(token, 'WRAPPED_NATIVE')
+  return token
 }
